@@ -1,0 +1,59 @@
+[project]
+name = "booking"
+version = "0.1.0"
+description = "Resource booking system with hold/confirm state machine"
+readme = "README.md"
+authors = [
+    { name = "hornum", email = "a.chere.pnin@mail.ru" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "asyncpg>=0.31.0",
+    "fastapi>=0.138.0",
+    "sqlalchemy>=2.0.51",
+    "uvicorn[standard]>=0.49.0",
+]
+
+[project.scripts]
+booking = "booking:main"
+
+[build-system]
+requires = ["uv_build>=0.11.23,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "mypy>=2.1.0",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.15.18",
+]
+
+[tool.ruff]
+line-length = 88
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+extend-select = [
+    "E",
+    "W",
+    "F",
+    "I",
+    "UP",
+    "B",
+    "C4",
+    "SIM",
+    "RUF",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+strict = true
+python_version = "3.13"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-ra --strict-markers"
