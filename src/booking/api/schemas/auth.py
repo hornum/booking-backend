@@ -11,3 +11,9 @@ class AuthResponse(BaseModel):
     user_id: int
     access_token: str
     refresh_token: str
+
+
+class LoginResponse(BaseModel):
+    user_id: int
+    access_token: str
+    refresh_token: str
