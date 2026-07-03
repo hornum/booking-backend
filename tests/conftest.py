@@ -1,16 +1,17 @@
 import pytest_asyncio
+import pytest
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
-from booking.infra.orm import Base, BookingORM
-
-TEST_DATABASE_URL = "postgresql+asyncpg://booking:booking@localhost:5433/booking"
+from booking.infra.db import Base
+from booking.infra.bookings.orm import BookingORM
+from config.config import settings
 
 
 @pytest_asyncio.fixture(scope="session")
 async def engine():
-    test_engine = create_async_engine(TEST_DATABASE_URL, poolclass=NullPool)
+    test_engine = create_async_engine(settings.database_url, poolclass=NullPool)
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield test_engine
@@ -28,3 +29,12 @@ async def session(engine):
     async with factory() as cleanup:
         await cleanup.execute(delete(BookingORM))
         await cleanup.commit()
+
+
+@pytest.fixture
+def auth_json_data():
+    return {
+        "username": "testuser",
+        "password": "testpassword",
+        "email": "testuser@example.com",
+    }
