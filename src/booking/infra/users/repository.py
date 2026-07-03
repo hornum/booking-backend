@@ -21,7 +21,7 @@ class SqlUserRepository:
     @staticmethod
     def _to_orm(user: User) -> UserORM:
         orm = UserORM(
-            user_id=user.id,
+            id=user.id,
             email=user.email,
             username=user.username,
             hashed_password=user.hashed_password,
