@@ -1,9 +1,11 @@
 from datetime import datetime
 
 import pytest
+from pydantic import ValidationError
 
-from booking.domain.errors import SlotTaken, InvalidBookingTime
-from booking.domain.models import Booking, BookingStatus
+from booking.api.schemas.booking import BookRoomRequest
+from booking.domain.bookings.errors import InvalidBookingTime, SlotTaken
+from booking.domain.bookings.models import Booking, BookingStatus
 from booking.service.booking import book_room
 from tests.fakes import FakeBookingRepository
 
@@ -39,3 +41,13 @@ def test_start_after_end_error():
             end=datetime(2026, 1, 1, 8, 30),
             status=BookingStatus.HOLD,
         )
+
+
+def test_request_rejects_end_before_start():
+    with pytest.raises(ValidationError):
+        BookRoomRequest(
+            room_id=1,
+            start=datetime(2026, 1, 1, 10, 0),
+            end=datetime(2026, 1, 1, 9, 0),
+        )
+
