@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Protocol
 
-from booking.domain.models import Booking
+from booking.domain.bookings.models import Booking
 
 
 class BookingRepository(Protocol):
@@ -12,3 +12,4 @@ class BookingRepository(Protocol):
     async def find_overlapping(
         self, room_id: int, start: datetime, end: datetime
     ) -> list[Booking]: ...
+

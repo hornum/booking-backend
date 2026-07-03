@@ -1,14 +1,15 @@
 from sqlalchemy.ext.asyncio import (
-    AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.orm import DeclarativeBase
 
-from booking.infra.orm import Base
+from config.config import settings
 
-DATABASE_URL = "postgresql+asyncpg://booking:booking@localhost:5432/booking"
+engine = create_async_engine(settings.database_url, echo=True)
 
-engine = create_async_engine(DATABASE_URL, echo=True)
+class Base(DeclarativeBase):
+    pass
 
 async_session_factory = async_sessionmaker(
     engine,

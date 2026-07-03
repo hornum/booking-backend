@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
 
-from booking.domain.errors import InvalidBookingTime
+from booking.domain.bookings.errors import InvalidBookingTime
 
 
 class BookingStatus(StrEnum):

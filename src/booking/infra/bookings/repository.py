@@ -3,8 +3,8 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from booking.domain.models import Booking
-from booking.infra.orm import BookingORM
+from booking.domain.bookings.models import Booking
+from booking.infra.bookings.orm import BookingORM
 
 
 class SqlBookingRepository:
@@ -61,3 +61,4 @@ class SqlBookingRepository:
 
         bookings = [self._to_domain(r) for r in rows]
         return bookings
+

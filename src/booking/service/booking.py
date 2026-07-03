@@ -1,8 +1,8 @@
 from datetime import datetime
 
-from booking.domain.errors import SlotTaken
-from booking.domain.models import Booking, BookingStatus
-from booking.domain.repo import BookingRepository
+from booking.domain.bookings.errors import SlotTaken
+from booking.domain.bookings.models import Booking, BookingStatus
+from booking.domain.bookings.repo import BookingRepository
 
 
 async def book_room(
