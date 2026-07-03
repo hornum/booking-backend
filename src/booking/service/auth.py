@@ -60,7 +60,7 @@ async def register_user(
         raise UserAlreadyExists()
 
     user = User(username=username, email=email, hashed_password=await hash_password(password))
-    await user_repo.add(user)
+    user = await user_repo.add(user)
 
     tokens = await _issue_tokens(token_repo=token_repo, user_id=user.id)
 

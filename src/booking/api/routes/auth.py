@@ -1,10 +1,11 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from booking.api.dependencies import get_session
 from booking.api.schemas.auth import UserRegister, AuthResponse
+from booking.domain.users.errors import UserAlreadyExists
 from booking.infra.token.repository import SqlTokenRepository
 from booking.infra.users.repository import SqlUserRepository
 from booking.service.auth import register_user
@@ -16,13 +17,16 @@ router = APIRouter(prefix="/api/v1/auth", tags=["Auth"])
 async def register(data: UserRegister, session: AsyncSession = Depends(get_session)):
     user_repo = SqlUserRepository(session)
     token_repo = SqlTokenRepository(session)
-    return await register_user(
-        user_repo=user_repo,
-        token_repo=token_repo,
-        username=data.username,
-        email=str(data.email),
-        password=data.password,
-    )
+    try:
+        return await register_user(
+            user_repo=user_repo,
+            token_repo=token_repo,
+            username=data.username,
+            email=str(data.email),
+            password=data.password,
+        )
+    except UserAlreadyExists:
+        raise HTTPException(status_code=409, detail="User already exists")
 
 
 # @router.post("/login", response_model=TokenResponse)
