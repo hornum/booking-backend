@@ -1,0 +1,13 @@
+from typing import Protocol
+
+from booking.domain.users.models import User
+
+
+class UserRepository(Protocol):
+    async def add(self, user: User) -> User: ...
+
+    async def get(self, user_id: int) -> User | None: ...
+
+    async def find_by_username(self, username: str) -> User | None: ...
+
+    async def find_existing(self, email: str, username: str) -> User | None: ...
