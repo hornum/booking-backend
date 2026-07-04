@@ -113,5 +113,7 @@ async def refresh_tokens(token_repo: TokenRepository, refresh_token: str) -> Log
 
 
 async def logout_user(token_repo: TokenRepository, refresh_token: str) -> None:
-    token = await token_repo.get_by_hash(refresh_token)
+    token = await token_repo.get_by_hash(hash_token(refresh_token))
+    if not token:
+        return
     await token_repo.revoke(token)
