@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -32,8 +32,6 @@ class SqlTokenRepository:
         )
         if token.id is not None:
             orm.id = token.id
-        if token.created_at is not None:
-            orm.created_at = token.created_at
         return orm
 
     async def add(self, token: RefreshToken) -> RefreshToken:
@@ -54,8 +52,8 @@ class SqlTokenRepository:
         await self._session.execute(
             update(RefreshTokenOrm)
             .where(RefreshTokenOrm.id == token.id)
-            .values(revoked_at=datetime.now())
+            .values(revoked_at=datetime.now(tz=timezone.utc))
         )
         await self._session.flush()
 
-    async def revoke_all(self, token: RefreshToken) -> None: ...
+    async def revoke_all(self, user_id: int) -> None: ...
