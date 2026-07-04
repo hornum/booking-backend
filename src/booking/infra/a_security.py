@@ -3,7 +3,7 @@ import hashlib
 import secrets
 
 from datetime import datetime, timezone, timedelta
-from jose import jwt
+from jose import jwt, JWTError
 
 from passlib.context import CryptContext
 
@@ -23,8 +23,9 @@ async def verify_password(plain: str, hashed: str) -> bool:
     return await asyncio.to_thread(pwd_context.verify, plain, hashed)
 
 
-def create_access_token(user_id: int, expire: datetime) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes)
+def create_access_token(user_id: int, expire: datetime | None = None) -> str:
+    if expire is None:
+        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes)
     payload = {"sub": str(user_id), "exp": expire}
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.TOKEN_ALGORITHM)
 
@@ -34,6 +35,11 @@ def create_refresh_token() -> str:
 
 
 def decode_access_token(token: str) -> int:
-    payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.algorithm])
+    payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.TOKEN_ALGORITHM])
     user_id_str = payload.get("sub")
-    return int(user_id_str)
+    try:
+        user_id_int = int(user_id_str)
+    except (ValueError, TypeError):
+        raise JWTError()
+
+    return user_id_int
