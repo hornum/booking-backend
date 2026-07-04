@@ -38,24 +38,21 @@ class SqlUserRepository:
 
     async def get(self, user_id: int) -> User | None:
         orm_user = await self._session.get(UserORM, user_id)
-        if orm_user is None:
-            return None
 
-        return self._to_domain(orm_user)
+        return self._to_domain(orm_user) if orm_user is not None else None
 
 
     async def find_by_username(self, username: str) -> User | None:
         query = select(UserORM).where(UserORM.username == username)
         result = await self._session.execute(query)
         orm_user = result.scalar_one_or_none()
-        if orm_user is None:
-            return None
-        return self._to_domain(orm_user)
+
+        return self._to_domain(orm_user) if orm_user is not None else None
 
 
     async def find_existing(self, email: str, username: str) -> User | None:
         query = select(UserORM).where(or_(UserORM.username == username, UserORM.email == email))
         result = await self._session.execute(query)
-        user = result.scalar_one_or_none()
+        orm_user = result.scalar_one_or_none()
 
-        return user
+        return self._to_domain(orm_user) if orm_user is not None else None
