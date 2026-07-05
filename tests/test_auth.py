@@ -61,10 +61,10 @@ async def test_login(auth_json_data):
         username=auth_json_data['username'],
         password=auth_json_data['password'],
     )
-    json = asdict(response)
-    assert 'access_token' in json
-    assert 'refresh_token' in json
-    assert 'user_id' in json
+
+    assert response.access_token
+    assert response.refresh_token
+    assert response.user_id
 
 
 async def test_login_fail(auth_json_data):
@@ -95,11 +95,11 @@ async def test_token_refreshes(auth_json_data):
 
     tokens = await register_user(user_repo=us_repo, token_repo=token_repo, **auth_json_data)
 
-    await refresh_tokens(token_repo=token_repo, refresh_token=tokens.refresh_token)
-    json = asdict(tokens)
-    assert 'access_token' in json
-    assert 'refresh_token' in json
-    assert 'user_id' in json
+    refreshed = await refresh_tokens(token_repo=token_repo, refresh_token=tokens.refresh_token)
+
+    assert refreshed.access_token
+    assert refreshed.refresh_token
+    assert refreshed.user_id
 
     with pytest.raises(TokenExpired):
         await refresh_tokens(token_repo=token_repo, refresh_token=tokens.refresh_token)
