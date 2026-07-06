@@ -61,3 +61,9 @@ class SqlBookingRepository:
 
         bookings = [self._to_domain(r) for r in rows]
         return bookings
+
+    async def update(self, booking: Booking) -> Booking:
+        orm = self._to_orm(booking)
+        merged = await self._session.merge(orm)
+        await self._session.flush()
+        return self._to_domain(merged)

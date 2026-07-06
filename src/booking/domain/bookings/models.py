@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
 
@@ -22,21 +21,30 @@ _ALLOWED_STATUS_TRANSITIONS: dict[BookingStatus, set[BookingStatus]] = {
 }
 
 
-@dataclass
 class Booking:
-    room_id: int
-    user_id: int
-    start: datetime
-    end: datetime
-    status: BookingStatus
-    id: int | None = None
-
-    def __post_init__(self) -> None:
-        if self.start >= self.end:
+    def __init__(
+            self,
+            room_id: int,
+            user_id: int,
+            start: datetime,
+            end: datetime,
+            status: BookingStatus,
+            id: int | None = None,):
+        if start >= end:
             raise InvalidBookingTime()
+        self.room_id=room_id
+        self.user_id=user_id
+        self.start=start
+        self.end=end
+        self._status=status
+        self.id=id
+
+    @property
+    def status(self) -> BookingStatus:
+        return self._status
+
 
     def change_status(self, new_status: BookingStatus) -> None:
-        if new_status not in _ALLOWED_STATUS_TRANSITIONS[self.status]:
+        if new_status not in _ALLOWED_STATUS_TRANSITIONS[self._status]:
             raise InvalidStatusTransition()
-        self.status = new_status
-
+        self._status = new_status

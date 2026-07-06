@@ -1,3 +1,4 @@
+import copy
 from datetime import UTC, datetime
 
 from booking.domain.bookings.models import Booking
@@ -13,13 +14,13 @@ class FakeBookingRepository:
     async def add(self, booking: Booking) -> Booking:
         booking.id = self._next_id
         self._next_id += 1
-        self._bookings.append(booking)
-        return booking
+        self._bookings.append(copy.deepcopy(booking))
+        return copy.deepcopy(booking)
 
     async def get(self, booking_id: int) -> Booking | None:
         for booking in self._bookings:
             if booking.id == booking_id:
-                return booking
+                return copy.deepcopy(booking)
 
         return None
 
@@ -29,9 +30,18 @@ class FakeBookingRepository:
         bookings = []
         for b in self._bookings:
             if b.room_id == room_id and b.start < end and start < b.end:
-                bookings.append(b)
+                bookings.append(copy.deepcopy(b))
 
         return bookings
+
+
+    async def update(self, booking: Booking) -> Booking | None:
+        for i, b in enumerate(self._bookings):
+            if b.id == booking.id:
+                self._bookings[i] = copy.deepcopy(booking)
+                return copy.deepcopy(booking)
+        return None
+
 
 
 class FakeUserRepository:
