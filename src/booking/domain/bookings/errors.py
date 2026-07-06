@@ -12,3 +12,7 @@ class BookingNotFound(BookingError):
 
 class InvalidBookingTime(BookingError):
     pass
+
+
+class InvalidStatusTransition(BookingError):
+    pass

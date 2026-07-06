@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 import pytest
 import pytest_asyncio
@@ -8,6 +9,8 @@ from sqlalchemy import Connection, text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 from testcontainers.postgres import PostgresContainer
+
+from booking.domain.bookings.models import BookingStatus
 
 
 def run_migrations(connection: Connection) -> None:
@@ -68,4 +71,15 @@ def auth_json_data():
         "username": "testuser",
         "password": "testpassword",
         "email": "testuser@example.com",
+    }
+
+
+@pytest.fixture
+def base_booking_data():
+    return {
+        "room_id": 1,
+        "user_id": 1,
+        "start": datetime(2026, 1, 1, 10, 00),
+        "end": datetime(2026, 1, 1, 12, 30),
+        "status": BookingStatus.HOLD,
     }
