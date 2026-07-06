@@ -2,7 +2,6 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
 BASE_DIR = Path(__file__).resolve().parents[2]
 ENV_FILE = BASE_DIR / ".env"
 
@@ -18,7 +17,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str
 
     CORS_ORIGINS: list[str] = ["http://localhost:8000", "http://localhost:3000"]
-    #JWT settings
+    # JWT settings
     PASS_ALGORITHMS: str = "bcrypt"
     TOKEN_ALGORITHM: str = "HS256"
     access_token_expire_minutes: int = 30

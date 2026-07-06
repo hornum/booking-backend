@@ -1,7 +1,7 @@
 import uuid
 
-import pytest_asyncio
 import pytest
+import pytest_asyncio
 from alembic import command
 from alembic.config import Config as AlembicConfig
 from sqlalchemy import Connection, text
@@ -42,7 +42,9 @@ async def test_db_url(template_engine):
     template_name = template_engine.url.database
 
     async with admin_engine.connect() as conn:
-        await conn.execute(text(f'CREATE DATABASE "{db_name}" TEMPLATE "{template_name}"'))
+        await conn.execute(
+            text(f'CREATE DATABASE "{db_name}" TEMPLATE "{template_name}"')
+        )
 
     yield template_engine.url.set(database=db_name)
 

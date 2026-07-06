@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -52,7 +52,7 @@ class SqlTokenRepository:
         await self._session.execute(
             update(RefreshTokenOrm)
             .where(RefreshTokenOrm.id == token.id)
-            .values(revoked_at=datetime.now(tz=timezone.utc))
+            .values(revoked_at=datetime.now(tz=UTC))
         )
         await self._session.flush()
 

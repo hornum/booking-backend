@@ -1,4 +1,3 @@
-from dataclasses import asdict
 from datetime import datetime
 
 import pytest
@@ -7,7 +6,7 @@ from booking.domain.users.errors import UserNotFound
 from booking.infra.bookings.repository import SqlBookingRepository
 from booking.infra.token.repository import SqlTokenRepository
 from booking.infra.users.repository import SqlUserRepository
-from booking.service.auth import register_user, login_user
+from booking.service.auth import login_user, register_user
 from booking.service.booking import book_room
 
 
@@ -15,7 +14,9 @@ async def test_book_room_persists_to_db(session):
     repo = SqlBookingRepository(session)
 
     booking = await book_room(
-        repo=repo, user_id=1, room_id=1,
+        repo=repo,
+        user_id=1,
+        room_id=1,
         start=datetime(2026, 1, 1, 9, 0),
         end=datetime(2026, 1, 1, 10, 0),
     )

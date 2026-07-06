@@ -12,4 +12,3 @@ class BookingRepository(Protocol):
     async def find_overlapping(
         self, room_id: int, start: datetime, end: datetime
     ) -> list[Booking]: ...
-

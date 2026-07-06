@@ -5,17 +5,19 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from booking.api.dependencies import get_session
-from booking.api.schemas.auth import UserRegister, AuthResponse, LoginResponse
+from booking.api.schemas.auth import AuthResponse, LoginResponse, UserRegister
 from booking.domain.users.errors import UserAlreadyExists
 from booking.infra.token.repository import SqlTokenRepository
 from booking.infra.users.repository import SqlUserRepository
-from booking.service.auth import register_user, login_user
+from booking.service.auth import login_user, register_user
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Auth"])
 
 
 @router.post("/register")
-async def register(data: UserRegister, session: AsyncSession = Depends(get_session)) -> AuthResponse:
+async def register(
+    data: UserRegister, session: Annotated[AsyncSession, Depends(get_session)]
+) -> AuthResponse:
     user_repo = SqlUserRepository(session)
     token_repo = SqlTokenRepository(session)
     try:
@@ -27,7 +29,7 @@ async def register(data: UserRegister, session: AsyncSession = Depends(get_sessi
             password=data.password,
         )
     except UserAlreadyExists:
-        raise HTTPException(status_code=409, detail="User already exists")
+        raise HTTPException(status_code=409, detail="User already exists") from None
 
     return AuthResponse(
         access_token=user.access_token,
@@ -39,7 +41,7 @@ async def register(data: UserRegister, session: AsyncSession = Depends(get_sessi
 @router.post("/login")
 async def login(
     data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    session: AsyncSession = Depends(get_session),
+    session: Annotated[AsyncSession, Depends(get_session)],
 ) -> LoginResponse:
     user_repo = SqlUserRepository(session)
     token_repo = SqlTokenRepository(session)
@@ -53,7 +55,7 @@ async def login(
     return LoginResponse(
         user_id=user.user_id,
         access_token=user.access_token,
-        refresh_token=user.refresh_token
+        refresh_token=user.refresh_token,
     )
 
 

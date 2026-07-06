@@ -61,4 +61,3 @@ class SqlBookingRepository:
 
         bookings = [self._to_domain(r) for r in rows]
         return bookings
-

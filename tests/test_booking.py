@@ -50,4 +50,3 @@ def test_request_rejects_end_before_start():
             start=datetime(2026, 1, 1, 10, 0),
             end=datetime(2026, 1, 1, 9, 0),
         )
-

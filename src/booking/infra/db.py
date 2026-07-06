@@ -8,8 +8,10 @@ from config.config import settings
 
 engine = create_async_engine(settings.database_url)
 
+
 class Base(DeclarativeBase):
     pass
+
 
 async_session_factory = async_sessionmaker(
     engine,

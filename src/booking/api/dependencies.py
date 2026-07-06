@@ -3,7 +3,7 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError
+from jwt import InvalidTokenError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from booking.domain.users.models import User
@@ -26,7 +26,7 @@ async def get_session() -> AsyncGenerator[AsyncSession]:
 
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_bearer)],
-    session: Annotated[AsyncSession, Depends(get_session)]
+    session: Annotated[AsyncSession, Depends(get_session)],
 ) -> User:
     cred_exc = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -36,8 +36,8 @@ async def get_current_user(
 
     try:
         user_id = decode_access_token(token)
-    except JWTError:
-        raise cred_exc
+    except InvalidTokenError:
+        raise cred_exc from None
 
     user_repo = SqlUserRepository(session)
     user = await user_repo.get(user_id)

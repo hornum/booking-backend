@@ -1,4 +1,4 @@
-from sqlalchemy import select, or_
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from booking.domain.users.models import User
@@ -41,7 +41,6 @@ class SqlUserRepository:
 
         return self._to_domain(orm_user) if orm_user is not None else None
 
-
     async def find_by_username(self, username: str) -> User | None:
         query = select(UserORM).where(UserORM.username == username)
         result = await self._session.execute(query)
@@ -49,9 +48,10 @@ class SqlUserRepository:
 
         return self._to_domain(orm_user) if orm_user is not None else None
 
-
     async def find_existing(self, email: str, username: str) -> User | None:
-        query = select(UserORM).where(or_(UserORM.username == username, UserORM.email == email))
+        query = select(UserORM).where(
+            or_(UserORM.username == username, UserORM.email == email)
+        )
         result = await self._session.execute(query)
         orm_user = result.scalar_one_or_none()
 

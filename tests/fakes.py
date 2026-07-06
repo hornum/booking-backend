@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from booking.domain.bookings.models import Booking
 from booking.domain.refresh_token.models import RefreshToken
@@ -87,7 +87,7 @@ class FakeTokenRepository:
     async def revoke(self, token: RefreshToken) -> None:
         for stored in self._tokens:
             if stored.id == token.id:
-                stored.revoked_at = datetime.now(timezone.utc)
+                stored.revoked_at = datetime.now(UTC)
                 return
 
     async def revoke_all(self, user_id: int) -> None: ...

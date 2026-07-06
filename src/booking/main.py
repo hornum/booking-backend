@@ -1,5 +1,6 @@
 import uvicorn
 from fastapi import FastAPI
+
 from booking.api.routes import routers
 
 app = FastAPI()
