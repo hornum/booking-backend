@@ -5,13 +5,25 @@ import pytest
 import pytest_asyncio
 from alembic import command
 from alembic.config import Config as AlembicConfig
+from httpx import ASGITransport, AsyncClient
+from passlib.context import CryptContext
 from sqlalchemy import Connection, text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 from testcontainers.postgres import PostgresContainer
 
+from booking.api.dependencies import get_session, get_current_user
 from booking.domain.bookings.models import BookingStatus
+from booking.domain.users.models import User
+from booking.main import app
 
+from booking.infra import a_security
+
+fast_pwd_context = CryptContext(schemes=["bcrypt"], bcrypt__rounds=4)
+
+@pytest.fixture(autouse=True)
+def fast_password_hashing(monkeypatch):
+    monkeypatch.setattr(a_security, "pwd_context", fast_pwd_context)
 
 def run_migrations(connection: Connection) -> None:
     alembic_config = AlembicConfig("alembic.ini")
@@ -63,6 +75,27 @@ async def session(test_db_url):
     async with factory() as db_session:
         yield db_session
     await engine.dispose()
+
+
+@pytest_asyncio.fixture
+async def client(session):
+    async def override_get_session():
+        yield session
+
+    app.dependency_overrides[get_session] = override_get_session
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        yield ac
+    app.dependency_overrides.clear()
+
+
+@pytest_asyncio.fixture
+async def auth_client(client):
+    def override_get_current_user():
+        return User(id=1, username="tester", email="t@t.com", hashed_password="x")
+
+    app.dependency_overrides[get_current_user] = override_get_current_user
+    yield client
 
 
 @pytest.fixture
