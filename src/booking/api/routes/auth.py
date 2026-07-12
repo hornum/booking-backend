@@ -11,7 +11,7 @@ from booking.infra.token.repository import SqlTokenRepository
 from booking.infra.users.repository import SqlUserRepository
 from booking.service.auth import login_user, register_user
 
-router = APIRouter(prefix="/api/v1/auth", tags=["Auth"])
+router = APIRouter(prefix="/v1/auth", tags=["Auth"])
 
 
 @router.post("/register")
@@ -68,9 +68,3 @@ async def login(
 # async def logout(body: RefreshRequest, db: db_dependency):
 #     await logout_user(db, body.refresh_token)
 #     return {"message": "Successfully logged out"}
-#
-#
-# @router.get("/verify")
-# async def verify(db: db_dependency, token: str) -> dict:
-#     await verify_email_token(db, token)
-#     return {"message": "Email verified"}

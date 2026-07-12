@@ -12,18 +12,20 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 from testcontainers.postgres import PostgresContainer
 
-from booking.api.dependencies import get_session, get_current_user
+from booking.api.dependencies import get_current_user, get_session
 from booking.domain.bookings.models import BookingStatus
 from booking.domain.users.models import User
-from booking.main import app
-
 from booking.infra import a_security
+from booking.main import app
+from tests.fakes import FakeTokenRepository, FakeUserRepository
 
 fast_pwd_context = CryptContext(schemes=["bcrypt"], bcrypt__rounds=4)
+
 
 @pytest.fixture(autouse=True)
 def fast_password_hashing(monkeypatch):
     monkeypatch.setattr(a_security, "pwd_context", fast_pwd_context)
+
 
 def run_migrations(connection: Connection) -> None:
     alembic_config = AlembicConfig("alembic.ini")
@@ -96,6 +98,21 @@ async def auth_client(client):
 
     app.dependency_overrides[get_current_user] = override_get_current_user
     yield client
+
+
+@pytest.fixture
+def user_repo():
+    return FakeUserRepository()
+
+
+@pytest.fixture
+def token_repo():
+    return FakeTokenRepository()
+
+
+@pytest.fixture
+def booking_data():
+    return {"room_id": 1, "start": "2026-06-01T10:00:00", "end": "2026-06-01T11:00:00"}
 
 
 @pytest.fixture

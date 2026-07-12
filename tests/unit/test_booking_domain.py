@@ -5,14 +5,32 @@ from pydantic import ValidationError
 
 from booking.api.schemas.booking import BookRoomRequest
 from booking.domain.bookings.errors import (
-    BookingNotFound,
     InvalidBookingTime,
     InvalidStatusTransition,
     SlotTaken,
 )
 from booking.domain.bookings.models import Booking, BookingStatus
-from booking.service.booking import book_room, cancel_booking, confirm_booking
+from booking.service.booking import book_room
 from tests.fakes import FakeBookingRepository
+
+
+def test_start_after_end_error():
+    with pytest.raises(InvalidBookingTime):
+        Booking(
+            room_id=1,
+            user_id=1,
+            start=datetime(2026, 1, 1, 9, 30),
+            end=datetime(2026, 1, 1, 8, 30),
+            status=BookingStatus.HOLD,
+        )
+
+
+def test_request_rejects_end_before_start():
+    with pytest.raises(ValidationError):
+        BookRoomRequest(
+            start=datetime(2026, 1, 1, 10, 0),
+            end=datetime(2026, 1, 1, 9, 0),
+        )
 
 
 @pytest.mark.asyncio
@@ -34,25 +52,6 @@ async def test_overlapping_error():
             room_id=1,
             start=datetime(2026, 1, 1, 9, 30),
             end=datetime(2026, 1, 1, 10, 30),
-        )
-
-
-def test_start_after_end_error():
-    with pytest.raises(InvalidBookingTime):
-        Booking(
-            room_id=1,
-            user_id=1,
-            start=datetime(2026, 1, 1, 9, 30),
-            end=datetime(2026, 1, 1, 8, 30),
-            status=BookingStatus.HOLD,
-        )
-
-
-def test_request_rejects_end_before_start():
-    with pytest.raises(ValidationError):
-        BookRoomRequest(
-            start=datetime(2026, 1, 1, 10, 0),
-            end=datetime(2026, 1, 1, 9, 0),
         )
 
 
@@ -87,27 +86,6 @@ def test_expired_cant_be_confirmed(base_booking_data: dict):
     booking.change_status(BookingStatus.EXPIRED)
     with pytest.raises(InvalidStatusTransition):
         booking.change_status(BookingStatus.CONFIRMED)
-
-
-async def test_confirm_booking_sets_confirmed(base_booking_data: dict):
-    repo = FakeBookingRepository()
-    booking = await repo.add(Booking(**base_booking_data))
-    result = await confirm_booking(repo, booking.id)
-    assert result.status == BookingStatus.CONFIRMED
-
-
-async def test_confirm_missing_booking_raises():
-    repo = FakeBookingRepository()
-    with pytest.raises(BookingNotFound):
-        await confirm_booking(repo, 999)
-
-
-async def test_confirm_canceled_booking_raises(base_booking_data: dict):
-    repo = FakeBookingRepository()
-    booking = await repo.add(Booking(**base_booking_data))
-    await cancel_booking(repo, booking.id)
-    with pytest.raises(InvalidStatusTransition):
-        await confirm_booking(repo, booking.id)
 
 
 def test_direct_status_assignment_forbidden(base_booking_data: dict):

@@ -34,14 +34,12 @@ class FakeBookingRepository:
 
         return bookings
 
-
     async def update(self, booking: Booking) -> Booking | None:
         for i, b in enumerate(self._bookings):
             if b.id == booking.id:
                 self._bookings[i] = copy.deepcopy(booking)
                 return copy.deepcopy(booking)
         return None
-
 
 
 class FakeUserRepository:
@@ -70,7 +68,7 @@ class FakeUserRepository:
 
     async def find_existing(self, email: str, username: str) -> User | None:
         for user in self._users:
-            if user.email == email and user.username == username:
+            if user.email == email or user.username == username:
                 return user
 
         return None

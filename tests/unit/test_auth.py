@@ -11,15 +11,11 @@ from booking.domain.users.errors import (
 )
 from booking.domain.users.models import User
 from booking.service.auth import login_user, refresh_tokens, register_user
-from tests.fakes import FakeTokenRepository, FakeUserRepository
 
 
-async def test_correct_auth(auth_json_data):
-    us_repo = FakeUserRepository()
-    token_repo = FakeTokenRepository()
-
+async def test_correct_auth(auth_json_data, user_repo, token_repo):
     response = await register_user(
-        user_repo=us_repo,
+        user_repo=user_repo,
         token_repo=token_repo,
         **auth_json_data,
     )
@@ -30,44 +26,39 @@ async def test_correct_auth(auth_json_data):
     assert "refresh_token" in json
 
 
-async def test_user_exists_err(auth_json_data):
-    us_repo = FakeUserRepository()
-    token_repo = FakeTokenRepository()
-
-    same_name_data = auth_json_data
-    same_name_data["email"] = "jhon@test.com"
-
-    same_mail_data = auth_json_data
-    same_mail_data["username"] = "Jhon"
+async def test_user_exists_err(auth_json_data, user_repo, token_repo):
+    same_name_data = {**auth_json_data, "email": "jhon@test.com"}
+    same_mail_data = {**auth_json_data, "username": "Jhon"}
+    print(same_name_data)
+    print(same_mail_data)
+    print(auth_json_data)
 
     await register_user(
-        user_repo=us_repo,
+        user_repo=user_repo,
         token_repo=token_repo,
         **auth_json_data,
     )
 
     with pytest.raises(UserAlreadyExists):
         await register_user(
-            user_repo=us_repo,
+            user_repo=user_repo,
             token_repo=token_repo,
             **same_name_data,
         )
 
     with pytest.raises(UserAlreadyExists):
         await register_user(
-            user_repo=us_repo,
+            user_repo=user_repo,
             token_repo=token_repo,
             **same_mail_data,
         )
 
 
-async def test_login(auth_json_data):
-    us_repo = FakeUserRepository()
-    token_repo = FakeTokenRepository()
-    await register_user(user_repo=us_repo, token_repo=token_repo, **auth_json_data)
+async def test_login(auth_json_data, user_repo, token_repo):
+    await register_user(user_repo=user_repo, token_repo=token_repo, **auth_json_data)
 
     response = await login_user(
-        user_repo=us_repo,
+        user_repo=user_repo,
         token_repo=token_repo,
         username=auth_json_data["username"],
         password=auth_json_data["password"],
@@ -78,14 +69,12 @@ async def test_login(auth_json_data):
     assert response.user_id
 
 
-async def test_login_fail(auth_json_data):
-    us_repo = FakeUserRepository()
-    token_repo = FakeTokenRepository()
-    await register_user(user_repo=us_repo, token_repo=token_repo, **auth_json_data)
+async def test_login_fail(auth_json_data, user_repo, token_repo):
+    await register_user(user_repo=user_repo, token_repo=token_repo, **auth_json_data)
 
     with pytest.raises(IncorrectPassword):
         await login_user(
-            user_repo=us_repo,
+            user_repo=user_repo,
             token_repo=token_repo,
             username=auth_json_data["username"],
             password="wrong_password",
@@ -93,19 +82,16 @@ async def test_login_fail(auth_json_data):
 
     with pytest.raises(UserNotFound):
         await login_user(
-            user_repo=us_repo,
+            user_repo=user_repo,
             token_repo=token_repo,
             username="wrong_name",
             password=auth_json_data["password"],
         )
 
 
-async def test_token_refreshes(auth_json_data):
-    us_repo = FakeUserRepository()
-    token_repo = FakeTokenRepository()
-
+async def test_token_refreshes(auth_json_data, user_repo, token_repo):
     tokens = await register_user(
-        user_repo=us_repo, token_repo=token_repo, **auth_json_data
+        user_repo=user_repo, token_repo=token_repo, **auth_json_data
     )
 
     refreshed = await refresh_tokens(

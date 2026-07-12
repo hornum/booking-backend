@@ -5,12 +5,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from booking.api.dependencies import get_current_user, get_session
 from booking.api.schemas.booking import BookingResponse, BookRoomRequest
-from booking.domain.bookings.errors import SlotTaken, BookingNotFound, \
-    InvalidStatusTransition
+from booking.domain.bookings.errors import (
+    BookingNotFound,
+    InvalidStatusTransition,
+    SlotTaken,
+)
 from booking.domain.bookings.models import Booking
 from booking.domain.users.models import User
 from booking.infra.bookings.repository import SqlBookingRepository
-from booking.service.booking import book_room, confirm_booking, cancel_booking
+from booking.service.booking import book_room, cancel_booking, confirm_booking
 
 router = APIRouter(prefix="/v1/bookings", tags=["booking"])
 
@@ -24,7 +27,7 @@ async def room_book_router(
 ) -> Booking:
     repo = SqlBookingRepository(session)
     if curr_user.id is None:
-        raise RuntimeError("Repository returned user without id after add")
+        raise RuntimeError("Authenticated user has no id")
     try:
         booking = await book_room(
             repo=repo,
@@ -41,9 +44,9 @@ async def room_book_router(
 
 @router.get(path="/{booking_id}", response_model=BookingResponse)
 async def booking_get_router(
-        booking_id: int,
-        curr_user: Annotated[User, Depends(get_current_user)],
-        session: Annotated[AsyncSession, Depends(get_session)],
+    booking_id: int,
+    curr_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
 ) -> Booking:
     repo = SqlBookingRepository(session)
     booking = await repo.get(booking_id=booking_id)
@@ -53,14 +56,12 @@ async def booking_get_router(
 
 
 @router.post(
-    path="/{booking_id}/confirm",
-    response_model=BookingResponse,
-    status_code=200
+    path="/{booking_id}/confirm", response_model=BookingResponse, status_code=200
 )
 async def confirm_booking_endpoint(
-        booking_id: int,
-        curr_user: Annotated[User, Depends(get_current_user)],
-        session: Annotated[AsyncSession, Depends(get_session)],
+    booking_id: int,
+    curr_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
 ) -> Booking:
     repo = SqlBookingRepository(session)
     try:
@@ -68,19 +69,19 @@ async def confirm_booking_endpoint(
     except BookingNotFound:
         raise HTTPException(status_code=404, detail="Booking not found") from None
     except InvalidStatusTransition:
-        raise HTTPException(status_code=409, detail="Invalid status transition") from None
+        raise HTTPException(
+            status_code=409, detail="Invalid status transition"
+        ) from None
     return booking
 
 
 @router.post(
-    path="/{booking_id}/cancel",
-    response_model=BookingResponse,
-    status_code=200
+    path="/{booking_id}/cancel", response_model=BookingResponse, status_code=200
 )
 async def cancel_booking_endpoint(
-        booking_id: int,
-        curr_user: Annotated[User, Depends(get_current_user)],
-        session: Annotated[AsyncSession, Depends(get_session)],
+    booking_id: int,
+    curr_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
 ) -> Booking:
     repo = SqlBookingRepository(session)
     try:
@@ -88,5 +89,7 @@ async def cancel_booking_endpoint(
     except BookingNotFound:
         raise HTTPException(status_code=404, detail="Booking not found") from None
     except InvalidStatusTransition:
-        raise HTTPException(status_code=409, detail="Invalid status transition") from None
+        raise HTTPException(
+            status_code=409, detail="Invalid status transition"
+        ) from None
     return booking
