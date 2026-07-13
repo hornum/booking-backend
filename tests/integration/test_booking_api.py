@@ -79,3 +79,41 @@ async def test_confirm_cancelled_fail(auth_client, booking_data):
 async def test_confirm_without_auth_returns_401(client):
     response = await client.post("/v1/bookings/1/confirm")
     assert response.status_code == 401
+
+
+async def test_confirm_auth_fail(as_user, booking_data):
+    owner = as_user(1)
+    create = await owner.post(
+        "/v1/bookings/1/book",
+        json=booking_data,
+    )
+    booking_id = create.json()["id"]
+
+    not_owner = as_user(2)
+    response = await not_owner.post(f"/v1/bookings/{booking_id}/confirm")
+    assert response.status_code == 403
+
+
+async def test_cancel_auth_fail(as_user, booking_data):
+    owner = as_user(1)
+    create = await owner.post(
+        "/v1/bookings/1/book",
+        json=booking_data,
+    )
+    booking_id = create.json()["id"]
+
+    not_owner = as_user(2)
+    response = await not_owner.post(f"/v1/bookings/{booking_id}/cancel")
+    assert response.status_code == 403
+
+async def test_get_auth_fail(as_user, booking_data):
+    owner = as_user(1)
+    create = await owner.post(
+        "/v1/bookings/1/book",
+        json=booking_data,
+    )
+    booking_id = create.json()["id"]
+
+    not_owner = as_user(2)
+    response = await not_owner.get(f"/v1/bookings/{booking_id}")
+    assert response.status_code == 403

@@ -92,12 +92,23 @@ async def client(session):
 
 
 @pytest_asyncio.fixture
-async def auth_client(client):
-    def override_get_current_user():
-        return User(id=1, username="tester", email="t@t.com", hashed_password="x")
+async def auth_client(as_user):
+    return as_user(1)
 
-    app.dependency_overrides[get_current_user] = override_get_current_user
-    yield client
+
+@pytest_asyncio.fixture
+async def as_user(client):
+    def _as_user(user_id: int):
+        def override_get_current_user():
+            return User(
+                id=user_id,
+                username=f"tester{user_id}",
+                email=f"t{user_id}@t.com",
+                hashed_password="x"
+            )
+        app.dependency_overrides[get_current_user] = override_get_current_user
+        return client
+    return _as_user
 
 
 @pytest.fixture
