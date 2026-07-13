@@ -10,6 +10,10 @@ class BookingNotFound(BookingError):
     pass
 
 
+class BookingAccessDenied(BookingError):
+    pass
+
+
 class InvalidBookingTime(BookingError):
     pass
 

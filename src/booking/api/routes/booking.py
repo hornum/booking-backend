@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from booking.api.dependencies import get_current_user, get_session
 from booking.api.schemas.booking import BookingResponse, BookRoomRequest
 from booking.domain.bookings.errors import (
+    BookingAccessDenied,
     BookingNotFound,
     InvalidStatusTransition,
     SlotTaken,
@@ -13,7 +14,12 @@ from booking.domain.bookings.errors import (
 from booking.domain.bookings.models import Booking
 from booking.domain.users.models import User
 from booking.infra.bookings.repository import SqlBookingRepository
-from booking.service.booking import book_room, cancel_booking, confirm_booking
+from booking.service.booking import (
+    book_room,
+    cancel_booking,
+    confirm_booking,
+    get_booking,
+)
 
 router = APIRouter(prefix="/v1/bookings", tags=["booking"])
 
@@ -49,9 +55,16 @@ async def booking_get_router(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> Booking:
     repo = SqlBookingRepository(session)
-    booking = await repo.get(booking_id=booking_id)
-    if not booking:
-        raise HTTPException(status_code=404, detail="Booking not found")
+    if curr_user.id is None:
+        raise RuntimeError("Authenticated user has no id")
+    try:
+        booking = await get_booking(
+            repo=repo, booking_id=booking_id, actor_id=curr_user.id
+        )
+    except BookingNotFound:
+        raise HTTPException(status_code=404, detail="Booking not found") from None
+    except BookingAccessDenied:
+        raise HTTPException(status_code=403, detail="Booking access denied") from None
     return booking
 
 
@@ -64,10 +77,16 @@ async def confirm_booking_endpoint(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> Booking:
     repo = SqlBookingRepository(session)
+    if curr_user.id is None:
+        raise RuntimeError("Authenticated user has no id")
     try:
-        booking = await confirm_booking(repo=repo, booking_id=booking_id)
+        booking = await confirm_booking(
+            repo=repo, booking_id=booking_id, actor_id=curr_user.id
+        )
     except BookingNotFound:
         raise HTTPException(status_code=404, detail="Booking not found") from None
+    except BookingAccessDenied:
+        raise HTTPException(status_code=403, detail="Booking access denied") from None
     except InvalidStatusTransition:
         raise HTTPException(
             status_code=409, detail="Invalid status transition"
@@ -84,10 +103,16 @@ async def cancel_booking_endpoint(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> Booking:
     repo = SqlBookingRepository(session)
+    if curr_user.id is None:
+        raise RuntimeError("Authenticated user has no id")
     try:
-        booking = await cancel_booking(repo=repo, booking_id=booking_id)
+        booking = await cancel_booking(
+            repo=repo, booking_id=booking_id, actor_id=curr_user.id
+        )
     except BookingNotFound:
         raise HTTPException(status_code=404, detail="Booking not found") from None
+    except BookingAccessDenied:
+        raise HTTPException(status_code=403, detail="Booking access denied") from None
     except InvalidStatusTransition:
         raise HTTPException(
             status_code=409, detail="Invalid status transition"
