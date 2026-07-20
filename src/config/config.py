@@ -14,10 +14,12 @@ class Settings(BaseSettings):
     DB_PORT: int
     DB_NAME: str
 
-    SECRET_KEY: str
-
     CORS_ORIGINS: list[str] = ["http://localhost:8000", "http://localhost:3000"]
+    # Payment provider
+    PAYMENT_WEBHOOK_SECRET: str
+    DEFAULT_MAX_AGE_SECONDS: int = 60 * 15
     # JWT settings
+    JWT_SECRET_KEY: str
     PASS_ALGORITHMS: str = "bcrypt"
     TOKEN_ALGORITHM: str = "HS256"
     access_token_expire_minutes: int = 30

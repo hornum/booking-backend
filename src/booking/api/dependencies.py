@@ -46,3 +46,8 @@ async def get_current_user(
         raise cred_exc
 
     return user
+
+
+async def get_payment_provider() -> PaymentProvider:
+    return FakePaymentProvider()
+

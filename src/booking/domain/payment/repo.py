@@ -1,0 +1,13 @@
+from typing import Protocol
+
+from booking.domain.payment.models import Payment
+
+
+class PaymentRepository(Protocol):
+    async def add(self, payment: Payment) -> Payment: ...
+
+    async def get(self, payment_id: int) -> Payment | None: ...
+
+    async def get_by_session_id(self, session_id: str) -> Payment | None: ...
+
+    async def update(self, payment: Payment) -> Payment: ...

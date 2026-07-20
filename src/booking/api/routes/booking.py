@@ -94,6 +94,34 @@ async def confirm_booking_endpoint(
     return booking
 
 
+@router.post(path="/{booking_id}/pay")
+async def pay_for_booking_endpoint(
+        booking_id: int,
+        curr_user_id: Annotated[User, Depends(get_current_user_id)],
+        session: Annotated[AsyncSession, Depends(get_session)],
+        provider: Annotated[PaymentProvider, Depends(get_payment_provider)],
+) -> PaymentUrlResponse:
+    booking_repo = SqlBookingRepository(session)
+    payment_repo = SqlPaymentRepository(session)
+
+    try:
+        payment = await start_payment(
+            booking_repo=booking_repo,
+            payment_repo=payment_repo,
+            provider=provider,
+            booking_id=booking_id,
+            actor_id=curr_user_id,
+        )
+    except BookingNotFound:
+        raise HTTPException(status_code=404, detail="Booking not found") from None
+    except BookingAccessDenied:
+        raise HTTPException(status_code=403, detail="Booking access denied") from None
+    except BookingNotPayable:
+        raise HTTPException(status_code=409, detail="Booking not payable") from None
+
+    return PaymentUrlResponse(url=payment.payment_url)
+
+
 @router.post(
     path="/{booking_id}/cancel", response_model=BookingResponse, status_code=200
 )
