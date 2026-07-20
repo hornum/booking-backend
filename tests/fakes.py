@@ -2,6 +2,7 @@ import copy
 from datetime import UTC, datetime
 
 from booking.domain.bookings.models import Booking
+from booking.domain.payment.models import Payment
 from booking.domain.refresh_token.models import RefreshToken
 from booking.domain.users.models import User
 
@@ -99,3 +100,34 @@ class FakeTokenRepository:
                 return
 
     async def revoke_all(self, user_id: int) -> None: ...
+
+
+class FakePaymentRepository:
+    def __init__(self) -> None:
+        self._payments: list[Payment] = []
+        self._next_id = 1
+
+    async def add(self, payment: Payment) -> Payment:
+        payment.id = self._next_id
+        self._next_id += 1
+        self._payments.append(copy.deepcopy(payment))
+        return copy.deepcopy(payment)
+
+    async def get(self, payment_id: int) -> Payment | None:
+        for payment in self._payments:
+            if payment.id == payment_id:
+                return copy.deepcopy(payment)
+        return None
+
+    async def get_by_session_id(self, session_id: str) -> Payment | None:
+        for payment in self._payments:
+            if payment.provider_session_id == session_id:
+                return copy.deepcopy(payment)
+        return None
+
+    async def update(self, payment: Payment) -> Payment | None:
+        for i, b in enumerate(self._payments):
+            if b.id == payment.id:
+                self._payments[i] = copy.deepcopy(payment)
+                return copy.deepcopy(payment)
+        return None

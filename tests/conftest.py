@@ -1,4 +1,6 @@
+import time
 import uuid
+from dataclasses import dataclass
 from datetime import datetime
 
 import pytest
@@ -13,9 +15,12 @@ from sqlalchemy.pool import NullPool
 from testcontainers.postgres import PostgresContainer
 
 from booking.api.dependencies import get_current_user, get_session
-from booking.domain.bookings.models import BookingStatus
+from booking.domain.bookings.models import BookingStatus, Booking
+from booking.domain.payment.models import PaymentStatus
 from booking.domain.users.models import User
 from booking.infra import a_security
+from booking.infra.bookings.repository import SqlBookingRepository
+from booking.infra.payment.webhook_signature import create_webhook_signature
 from booking.main import app
 from tests.fakes import FakeTokenRepository, FakeUserRepository
 
@@ -104,10 +109,12 @@ async def as_user(client):
                 id=user_id,
                 username=f"tester{user_id}",
                 email=f"t{user_id}@t.com",
-                hashed_password="x"
+                hashed_password="x",
             )
+
         app.dependency_overrides[get_current_user] = override_get_current_user
         return client
+
     return _as_user
 
 
@@ -122,7 +129,7 @@ def token_repo():
 
 
 @pytest.fixture
-def booking_data():
+def api_booking_data():
     return {"room_id": 1, "start": "2026-06-01T10:00:00", "end": "2026-06-01T11:00:00"}
 
 
@@ -136,7 +143,7 @@ def auth_json_data():
 
 
 @pytest.fixture
-def base_booking_data():
+def base_booking_model_data():
     return {
         "room_id": 1,
         "user_id": 1,
@@ -144,3 +151,96 @@ def base_booking_data():
         "end": datetime(2026, 1, 1, 12, 30),
         "status": BookingStatus.HOLD,
     }
+
+
+@pytest.fixture
+def base_payment_data():
+    return {
+        "booking_id": 1,
+        "amount": 500,
+        "provider_session_id": "x",
+        "status": PaymentStatus.PENDING,
+    }
+
+
+@pytest_asyncio.fixture
+async def booking_in_db(session):
+    repo = SqlBookingRepository(session)
+    return await repo.add(Booking(
+        room_id=1, user_id=1,
+        start=datetime(2026, 1, 1, 10, 0), end=datetime(2026, 1, 1, 11, 0),
+        status=BookingStatus.HOLD,
+    ))
+
+
+@pytest.fixture
+def webhook_secret(monkeypatch: pytest.MonkeyPatch):
+    secret = "very_fake_very_secret"
+    monkeypatch.setattr(
+        "booking.api.routes.payment.settings.PAYMENT_WEBHOOK_SECRET",
+        secret,
+    )
+    return secret
+
+
+@dataclass
+class SignatureData:
+    secret: str
+    timestamp: int
+    body: bytes
+    signature: str
+
+
+@pytest.fixture
+def webhook_signature_data():
+    secret = "secret"
+    timestamp = int(time.time())
+    body = b"body"
+
+    signature = create_webhook_signature(
+        body=body,
+        timestamp=timestamp,
+        secret=secret,
+    )
+
+    return SignatureData(
+        secret=secret,
+        timestamp=timestamp,
+        body=body,
+        signature=signature,
+    )
+
+
+
+@dataclass(frozen=True)
+class PaymentContext:
+    booking_id: int
+    session_id: str
+
+
+@pytest_asyncio.fixture
+async def pending_payment(
+    auth_client,
+    api_booking_data,
+):
+    booking_response = await auth_client.post(
+        "/v1/bookings/1/book",
+        json=api_booking_data,
+    )
+    assert booking_response.status_code == 201
+
+    booking = booking_response.json()
+    assert booking["status"] == "hold"
+
+    payment_response = await auth_client.post(
+        f"/v1/bookings/{booking['id']}/pay",
+    )
+    assert payment_response.status_code == 200
+
+    payment = payment_response.json()
+    session_id = payment["url"].split("/")[-1]
+
+    return PaymentContext(
+        booking_id=booking["id"],
+        session_id=session_id,
+    )
