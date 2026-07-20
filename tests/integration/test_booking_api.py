@@ -11,10 +11,10 @@ async def test_create_booking_returns_201(auth_client):
     assert response.json()["status"] == "hold"
 
 
-async def test_confirm_booking_returns_confirmed(auth_client, booking_data):
+async def test_confirm_booking_returns_confirmed(auth_client, api_booking_data):
     create = await auth_client.post(
         "/v1/bookings/1/book",
-        json=booking_data,
+        json=api_booking_data,
     )
     booking_id = create.json()["id"]
 
@@ -23,10 +23,10 @@ async def test_confirm_booking_returns_confirmed(auth_client, booking_data):
     assert response.json()["status"] == "confirmed"
 
 
-async def test_double_confirm_returns_409(auth_client, booking_data):
+async def test_double_confirm_returns_409(auth_client, api_booking_data):
     create = await auth_client.post(
         "/v1/bookings/1/book",
-        json=booking_data,
+        json=api_booking_data,
     )
     booking_id = create.json()["id"]
 
@@ -40,10 +40,10 @@ async def test_confirm_missing_returns_404(auth_client):
     assert response.status_code == 404
 
 
-async def test_cancel_booking_returns_cancelled(auth_client, booking_data):
+async def test_cancel_booking_returns_cancelled(auth_client, api_booking_data):
     create = await auth_client.post(
         "/v1/bookings/1/book",
-        json=booking_data,
+        json=api_booking_data,
     )
     booking_id = create.json()["id"]
 
@@ -52,10 +52,10 @@ async def test_cancel_booking_returns_cancelled(auth_client, booking_data):
     assert response.json()["status"] == "cancelled"
 
 
-async def test_cancel_already_cancelled_fail(auth_client, booking_data):
+async def test_cancel_already_cancelled_fail(auth_client, api_booking_data):
     create = await auth_client.post(
         "/v1/bookings/1/book",
-        json=booking_data,
+        json=api_booking_data,
     )
     booking_id = create.json()["id"]
 
@@ -64,10 +64,10 @@ async def test_cancel_already_cancelled_fail(auth_client, booking_data):
     assert response.status_code == 409
 
 
-async def test_confirm_cancelled_fail(auth_client, booking_data):
+async def test_confirm_cancelled_fail(auth_client, api_booking_data):
     create = await auth_client.post(
         "/v1/bookings/1/book",
-        json=booking_data,
+        json=api_booking_data,
     )
     booking_id = create.json()["id"]
 
@@ -81,11 +81,11 @@ async def test_confirm_without_auth_returns_401(client):
     assert response.status_code == 401
 
 
-async def test_confirm_auth_fail(as_user, booking_data):
+async def test_confirm_auth_fail(as_user, api_booking_data):
     owner = as_user(1)
     create = await owner.post(
         "/v1/bookings/1/book",
-        json=booking_data,
+        json=api_booking_data,
     )
     booking_id = create.json()["id"]
 
@@ -94,11 +94,11 @@ async def test_confirm_auth_fail(as_user, booking_data):
     assert response.status_code == 403
 
 
-async def test_cancel_auth_fail(as_user, booking_data):
+async def test_cancel_auth_fail(as_user, api_booking_data):
     owner = as_user(1)
     create = await owner.post(
         "/v1/bookings/1/book",
-        json=booking_data,
+        json=api_booking_data,
     )
     booking_id = create.json()["id"]
 
@@ -106,11 +106,12 @@ async def test_cancel_auth_fail(as_user, booking_data):
     response = await not_owner.post(f"/v1/bookings/{booking_id}/cancel")
     assert response.status_code == 403
 
-async def test_get_auth_fail(as_user, booking_data):
+
+async def test_get_auth_fail(as_user, api_booking_data):
     owner = as_user(1)
     create = await owner.post(
         "/v1/bookings/1/book",
-        json=booking_data,
+        json=api_booking_data,
     )
     booking_id = create.json()["id"]
 

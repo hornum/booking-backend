@@ -6,28 +6,26 @@ from config.config import settings
 
 
 def create_webhook_signature(
-        body: bytes,
-        timestamp: int,
-        secret: str,
+    body: bytes,
+    timestamp: int,
+    secret: str,
 ) -> str:
     signed_payload = str(timestamp).encode() + b"." + body
 
     signature = hmac.new(
-        key=secret.encode(),
-        msg=signed_payload,
-        digestmod=hashlib.sha256
+        key=secret.encode(), msg=signed_payload, digestmod=hashlib.sha256
     ).hexdigest()
 
     return signature
 
 
 def verify_payment_signature(
-        *,
-        body: bytes,
-        timestamp: int,
-        signature: str,
-        secret: str,
-        max_age_seconds: int = settings.DEFAULT_MAX_AGE_SECONDS,
+    *,
+    body: bytes,
+    timestamp: int,
+    signature: str,
+    secret: str,
+    max_age_seconds: int = settings.DEFAULT_MAX_AGE_SECONDS,
 ) -> bool:
 
     curr_timestamp = int(time.time())

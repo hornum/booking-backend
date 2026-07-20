@@ -11,7 +11,7 @@ class FakePaymentProvider:
         session_id = f"fake_{uuid.uuid4().hex}"
         session = PaymentSession(
             session_id=session_id,
-            payment_url=f"https://fake-pay.local/checkout/{session_id}"
+            payment_url=f"https://fake-pay.local/checkout/{session_id}",
         )
         self.created_sessions.append((amount, session))
         return session

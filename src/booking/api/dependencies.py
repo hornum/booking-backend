@@ -6,12 +6,14 @@ from fastapi.security import OAuth2PasswordBearer
 from jwt import InvalidTokenError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from booking.domain.payment.provider import PaymentProvider
 from booking.domain.users.models import User
 from booking.infra.a_security import decode_access_token
 from booking.infra.db import async_session_factory
+from booking.infra.payment.fake_provider import FakePaymentProvider
 from booking.infra.users.repository import SqlUserRepository
 
-oauth2_bearer = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+oauth2_bearer = OAuth2PasswordBearer(tokenUrl="/v1/auth/login")
 
 
 async def get_session() -> AsyncGenerator[AsyncSession]:
@@ -51,3 +53,10 @@ async def get_current_user(
 async def get_payment_provider() -> PaymentProvider:
     return FakePaymentProvider()
 
+
+async def get_current_user_id(
+    curr_user: Annotated[User, Depends(get_current_user)],
+) -> int:
+    if curr_user.id is None:
+        raise RuntimeError("Authenticated user has no id")
+    return curr_user.id

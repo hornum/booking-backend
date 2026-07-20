@@ -13,7 +13,9 @@ async def test_pay_create_and_conf_api(auth_client, webhook_secret, pending_paym
     )
 
     response = await auth_client.post(
-        "/v1/payments/webhook", content=webhook.body, headers=webhook.headers,
+        "/v1/payments/webhook",
+        content=webhook.body,
+        headers=webhook.headers,
     )
     assert response.status_code == 200
 
@@ -30,7 +32,9 @@ async def test_webhook_idempotent(auth_client, webhook_secret, pending_payment):
             secret=webhook_secret,
         )
         response = await auth_client.post(
-            "/v1/payments/webhook", content=webhook.body, headers=webhook.headers,
+            "/v1/payments/webhook",
+            content=webhook.body,
+            headers=webhook.headers,
         )
         assert response.status_code == 200
 
@@ -51,10 +55,10 @@ async def test_unknown_session_webhook_fail(client, webhook_secret):
         secret=webhook_secret,
     )
     response = await client.post(
-            "/v1/payments/webhook",
-            content=body,
+        "/v1/payments/webhook",
+        content=body,
         headers={"X-Signature": webhook_signature, "X-Timestamp": str(timestamp)},
-        )
+    )
     assert response.status_code == 404
 
 
@@ -66,7 +70,9 @@ async def test_webhook_failed_payment(auth_client, webhook_secret, pending_payme
     )
 
     response = await auth_client.post(
-        "/v1/payments/webhook", content=webhook.body, headers=webhook.headers,
+        "/v1/payments/webhook",
+        content=webhook.body,
+        headers=webhook.headers,
     )
     assert response.status_code == 200
 
@@ -76,7 +82,7 @@ async def test_webhook_failed_payment(auth_client, webhook_secret, pending_payme
 
 
 async def test_webhook_without_signature_fail(
-        auth_client, webhook_secret, pending_payment
+    auth_client, webhook_secret, pending_payment
 ):
     webhook = make_signed_webhook(
         session_id=pending_payment.session_id,
@@ -85,7 +91,8 @@ async def test_webhook_without_signature_fail(
     )
 
     response = await auth_client.post(
-        "/v1/payments/webhook", content=webhook.body,
+        "/v1/payments/webhook",
+        content=webhook.body,
         headers={"X-Timestamp": str(int(time.time()))},
     )
     assert response.status_code == 422

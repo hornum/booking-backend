@@ -1,7 +1,10 @@
 from datetime import datetime
 from enum import StrEnum
 
-from booking.domain.bookings.errors import InvalidBookingTime, InvalidStatusTransition
+from booking.domain.bookings.errors import (
+    InvalidBookingStatusTransition,
+    InvalidBookingTime,
+)
 
 
 class BookingStatus(StrEnum):
@@ -48,5 +51,5 @@ class Booking:
 
     def change_status(self, new_status: BookingStatus) -> None:
         if new_status not in _ALLOWED_STATUS_TRANSITIONS[self._status]:
-            raise InvalidStatusTransition()
+            raise InvalidBookingStatusTransition()
         self._status = new_status

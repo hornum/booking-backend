@@ -8,10 +8,8 @@ from sqlalchemy import engine_from_config, pool
 sys.path.insert(0, dirname(dirname(dirname(abspath(__file__)))))
 
 from booking.infra.db import Base
-from booking.infra.bookings.orm import BookingORM
-from booking.infra.users.orm import UserORM
-from booking.infra.token.orm import RefreshTokenOrm
 from config.config import settings
+import booking.infra
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

@@ -38,7 +38,6 @@ class SqlPaymentRepository:
         await self._session.flush()
         return self._to_domain(orm_payment)
 
-
     async def get(self, payment_id: int) -> Payment | None:
         orm_payment = await self._session.get(PaymentORM, payment_id)
         if orm_payment is None:

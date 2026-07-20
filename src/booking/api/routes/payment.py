@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, Header, Request
-from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
+
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from booking.api.dependencies import get_session
 from booking.api.schemas.payment import WebhookPayload
@@ -14,17 +15,20 @@ from config.config import settings
 
 router = APIRouter(prefix="/v1/payments", tags=["Payment"])
 
+
 @router.post("/webhook", status_code=200)
 async def webhook(
-        request: Request,
-        session: Annotated[AsyncSession, Depends(get_session)],
-        webhook_signature: Annotated[str, Header(alias="X-Signature")],
-        timestamp: Annotated[str, Header(alias="X-Timestamp")],
+    request: Request,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    webhook_signature: Annotated[str, Header(alias="X-Signature")],
+    timestamp_header: Annotated[str, Header(alias="X-Timestamp")],
 ) -> dict[str, bool]:
     try:
-        timestamp = int(timestamp)
+        timestamp = int(timestamp_header)
     except (ValueError, TypeError):
-        raise HTTPException(status_code=401, detail="Invalid payment signature")
+        raise HTTPException(
+            status_code=401, detail="Invalid payment signature"
+        ) from None
 
     payment_repo = SqlPaymentRepository(session)
     booking_repo = SqlBookingRepository(session)

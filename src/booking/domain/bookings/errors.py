@@ -18,5 +18,9 @@ class InvalidBookingTime(BookingError):
     pass
 
 
-class InvalidStatusTransition(BookingError):
+class InvalidBookingStatusTransition(BookingError):
+    pass
+
+
+class BookingNotPayable(BookingError):
     pass

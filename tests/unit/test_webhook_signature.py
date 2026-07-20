@@ -1,7 +1,4 @@
-import time
-
-from booking.infra.payment.webhook_signature import create_webhook_signature, \
-    verify_payment_signature
+from booking.infra.payment.webhook_signature import verify_payment_signature
 
 
 def test_signature_create_verify_success(webhook_signature_data):
@@ -42,5 +39,3 @@ def test_signature_invalid_secret_fail(webhook_signature_data):
         signature=webhook_signature_data.signature,
     )
     assert not signature_is_valid
-
-

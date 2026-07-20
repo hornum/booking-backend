@@ -5,8 +5,8 @@ from pydantic import ValidationError
 
 from booking.api.schemas.booking import BookRoomRequest
 from booking.domain.bookings.errors import (
+    InvalidBookingStatusTransition,
     InvalidBookingTime,
-    InvalidStatusTransition,
     SlotTaken,
 )
 from booking.domain.bookings.models import Booking, BookingStatus
@@ -55,40 +55,40 @@ async def test_overlapping_error():
         )
 
 
-def test_hold_can_be_confirmed(base_booking_data: dict):
-    booking = Booking(**base_booking_data)
+def test_hold_can_be_confirmed(base_booking_model_data: dict):
+    booking = Booking(**base_booking_model_data)
     booking.change_status(BookingStatus.CONFIRMED)
     assert booking.status == BookingStatus.CONFIRMED
 
 
-def test_confirmed_can_be_cancelled(base_booking_data: dict):
-    booking = Booking(**base_booking_data)
+def test_confirmed_can_be_cancelled(base_booking_model_data: dict):
+    booking = Booking(**base_booking_model_data)
     booking.change_status(BookingStatus.CONFIRMED)
     booking.change_status(BookingStatus.CANCELLED)
     assert booking.status == BookingStatus.CANCELLED
 
 
-def test_hold_to_hold_change(base_booking_data: dict):
-    booking = Booking(**base_booking_data)
-    with pytest.raises(InvalidStatusTransition):
+def test_hold_to_hold_change(base_booking_model_data: dict):
+    booking = Booking(**base_booking_model_data)
+    with pytest.raises(InvalidBookingStatusTransition):
         booking.change_status(BookingStatus.HOLD)
 
 
-def test_canceled_cant_be_confirmed(base_booking_data: dict):
-    booking = Booking(**base_booking_data)
+def test_canceled_cant_be_confirmed(base_booking_model_data: dict):
+    booking = Booking(**base_booking_model_data)
     booking.change_status(BookingStatus.CANCELLED)
-    with pytest.raises(InvalidStatusTransition):
+    with pytest.raises(InvalidBookingStatusTransition):
         booking.change_status(BookingStatus.CONFIRMED)
 
 
-def test_expired_cant_be_confirmed(base_booking_data: dict):
-    booking = Booking(**base_booking_data)
+def test_expired_cant_be_confirmed(base_booking_model_data: dict):
+    booking = Booking(**base_booking_model_data)
     booking.change_status(BookingStatus.EXPIRED)
-    with pytest.raises(InvalidStatusTransition):
+    with pytest.raises(InvalidBookingStatusTransition):
         booking.change_status(BookingStatus.CONFIRMED)
 
 
-def test_direct_status_assignment_forbidden(base_booking_data: dict):
-    booking = Booking(**base_booking_data)
+def test_direct_status_assignment_forbidden(base_booking_model_data: dict):
+    booking = Booking(**base_booking_model_data)
     with pytest.raises(AttributeError):
         booking.status = BookingStatus.CONFIRMED

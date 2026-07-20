@@ -15,7 +15,7 @@ from sqlalchemy.pool import NullPool
 from testcontainers.postgres import PostgresContainer
 
 from booking.api.dependencies import get_current_user, get_session
-from booking.domain.bookings.models import BookingStatus, Booking
+from booking.domain.bookings.models import Booking, BookingStatus
 from booking.domain.payment.models import PaymentStatus
 from booking.domain.users.models import User
 from booking.infra import a_security
@@ -166,11 +166,15 @@ def base_payment_data():
 @pytest_asyncio.fixture
 async def booking_in_db(session):
     repo = SqlBookingRepository(session)
-    return await repo.add(Booking(
-        room_id=1, user_id=1,
-        start=datetime(2026, 1, 1, 10, 0), end=datetime(2026, 1, 1, 11, 0),
-        status=BookingStatus.HOLD,
-    ))
+    return await repo.add(
+        Booking(
+            room_id=1,
+            user_id=1,
+            start=datetime(2026, 1, 1, 10, 0),
+            end=datetime(2026, 1, 1, 11, 0),
+            status=BookingStatus.HOLD,
+        )
+    )
 
 
 @pytest.fixture
@@ -209,7 +213,6 @@ def webhook_signature_data():
         body=body,
         signature=signature,
     )
-
 
 
 @dataclass(frozen=True)
