@@ -56,4 +56,10 @@ class SqlTokenRepository:
         )
         await self._session.flush()
 
-    async def revoke_all(self, user_id: int) -> None: ...
+    async def revoke_all(self, user_id: int) -> None:
+        await self._session.execute(
+            update(RefreshTokenOrm)
+            .where(RefreshTokenOrm.user_id == user_id)
+            .values(revoked_at=datetime.now(tz=UTC))
+        )
+        await self._session.flush()

@@ -1,6 +1,6 @@
 import uuid
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 
 import pytest
 import pytest_asyncio
@@ -16,10 +16,14 @@ from testcontainers.postgres import PostgresContainer
 from booking.api.dependencies import get_current_user, get_session
 from booking.domain.bookings.models import Booking, BookingStatus
 from booking.domain.payment.models import PaymentStatus
+from booking.domain.refresh_token.models import RefreshToken
 from booking.domain.users.models import User
 from booking.infra import a_security
+from booking.infra.a_security import hash_token
 from booking.infra.bookings.repository import SqlBookingRepository
 from booking.infra.payment.webhook_signature import create_webhook_signature
+from booking.infra.token.repository import SqlTokenRepository
+from booking.infra.users.repository import SqlUserRepository
 from booking.main import app
 from tests.fakes import FakeTokenRepository, FakeUserRepository
 
@@ -141,13 +145,25 @@ def auth_json_data():
     }
 
 
+@pytest_asyncio.fixture
+async def refresh_token_json_data(client, auth_json_data):
+    tokens = await client.post(
+        "/v1/auth/register",
+        json=auth_json_data,
+    )
+    data = tokens.json()
+    return {
+        "refresh_token": data["refresh_token"],
+    }
+
+
 @pytest.fixture
 def base_booking_model_data():
     return {
         "room_id": 1,
         "user_id": 1,
-        "start": datetime(2026, 1, 1, 10, 00),
-        "end": datetime(2026, 1, 1, 12, 30),
+        "start": datetime(2026, 1, 1, 10, 00, tzinfo=UTC),
+        "end": datetime(2026, 1, 1, 12, 30, tzinfo=UTC),
         "status": BookingStatus.HOLD,
     }
 
@@ -169,8 +185,8 @@ async def booking_in_db(session):
         Booking(
             room_id=1,
             user_id=1,
-            start=datetime(2026, 1, 1, 10, 0),
-            end=datetime(2026, 1, 1, 11, 0),
+            start=datetime(2026, 1, 1, 10, 0, tzinfo=UTC),
+            end=datetime(2026, 1, 1, 11, 0, tzinfo=UTC),
             status=BookingStatus.HOLD,
         )
     )
@@ -245,4 +261,49 @@ async def pending_payment(
     return PaymentContext(
         booking_id=booking["id"],
         session_id=session_id,
+    )
+
+
+@dataclass(frozen=True)
+class RefreshTokenFamily:
+    first: str
+    second: str
+
+
+@pytest_asyncio.fixture
+async def active_refresh_token_family(
+    session,
+):
+    token_repo = SqlTokenRepository(session)
+    user_repo = SqlUserRepository(session)
+    user = await user_repo.add(
+        User(
+            username="testuser",
+            email="testuser@test.test",
+            hashed_password="123",
+        )
+    )
+    first_token_str = "test_token"
+    second_token_str = "test_token2"
+    await token_repo.add(
+        RefreshToken(
+            token_hash=hash_token(first_token_str),
+            user_id=user.id,
+            expires_at=datetime(year=2030, month=1, day=1, tzinfo=UTC),
+            created_at=datetime.now(UTC),
+        )
+    )
+    await token_repo.add(
+        RefreshToken(
+            token_hash=hash_token(second_token_str),
+            user_id=user.id,
+            expires_at=datetime(year=2030, month=1, day=1, tzinfo=UTC),
+            created_at=datetime.now(UTC),
+        )
+    )
+    await session.commit()
+
+    return RefreshTokenFamily(
+        first=first_token_str,
+        second=second_token_str,
     )

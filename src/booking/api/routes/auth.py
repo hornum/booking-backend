@@ -1,15 +1,28 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from booking.api.dependencies import get_session
-from booking.api.schemas.auth import AuthResponse, LoginResponse, UserRegister
+from booking.api.schemas.auth import (
+    AuthResponse,
+    LoginResponse,
+    RefreshRequest,
+    RefreshResponse,
+    UserRegister,
+)
+from booking.domain.refresh_token.errors import TokenExpired, TokenNotFound
 from booking.domain.users.errors import UserAlreadyExists
 from booking.infra.token.repository import SqlTokenRepository
 from booking.infra.users.repository import SqlUserRepository
-from booking.service.auth import login_user, register_user
+from booking.service.auth import (
+    ReuseDetected,
+    login_user,
+    refresh_tokens,
+    register_user,
+)
 
 router = APIRouter(prefix="/v1/auth", tags=["Auth"])
 
@@ -59,9 +72,30 @@ async def login(
     )
 
 
-# @router.post("/refresh", response_model=TokenPair)
-# async def refresh(body: RefreshRequest, db: db_dependency):
-#     return await refresh_tokens(db, body.refresh_token)
+@router.post("/refresh", response_model=RefreshResponse)
+async def refresh(
+    body: RefreshRequest,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> RefreshResponse | Response:
+    token_repo = SqlTokenRepository(session)
+
+    try:
+        result = await refresh_tokens(
+            token_repo=token_repo, refresh_token=body.refresh_token
+        )
+    except (TokenExpired, TokenNotFound):
+        raise HTTPException(status_code=401, detail="Invalid refresh token") from None
+
+    if isinstance(result, ReuseDetected):
+        return JSONResponse(
+            status_code=401,
+            content={"detail": "Invalid refresh token"},
+        )
+
+    return RefreshResponse(
+        refresh_token=result.refresh_token,
+        access_token=result.access_token,
+    )
 
 
 # @router.post("/logout")

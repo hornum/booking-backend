@@ -2,7 +2,6 @@ from dataclasses import asdict
 
 import pytest
 
-from booking.domain.refresh_token.errors import TokenExpired
 from booking.domain.users.errors import (
     IncorrectPassword,
     InvalidUserEmail,
@@ -10,7 +9,12 @@ from booking.domain.users.errors import (
     UserNotFound,
 )
 from booking.domain.users.models import User
-from booking.service.auth import login_user, refresh_tokens, register_user
+from booking.service.auth import (
+    ReuseDetected,
+    login_user,
+    refresh_tokens,
+    register_user,
+)
 
 
 async def test_correct_auth(auth_json_data, user_repo, token_repo):
@@ -102,8 +106,10 @@ async def test_token_refreshes(auth_json_data, user_repo, token_repo):
     assert refreshed.refresh_token
     assert refreshed.user_id
 
-    with pytest.raises(TokenExpired):
-        await refresh_tokens(token_repo=token_repo, refresh_token=tokens.refresh_token)
+    response = await refresh_tokens(
+        token_repo=token_repo, refresh_token=tokens.refresh_token
+    )
+    assert isinstance(response, ReuseDetected)
 
 
 def test_email_not_empty():

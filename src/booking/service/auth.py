@@ -39,16 +39,23 @@ class LoginResult:
     refresh_token: str
 
 
+@dataclass(frozen=True)
+class ReuseDetected:
+    pass
+
+
 async def _issue_tokens(token_repo: TokenRepository, user_id: int) -> TokenPair:
-    expire = datetime.now(UTC) + timedelta(minutes=settings.access_token_expire_minutes)
-    access = a_security.create_access_token(user_id=user_id, expire=expire)
+    now = datetime.now(UTC)
+    access_expire = now + timedelta(minutes=settings.access_token_expire_minutes)
+    refresh_expire = now + timedelta(days=settings.refresh_token_expire_days)
+    access = a_security.create_access_token(user_id=user_id, expire=access_expire)
     refresh = a_security.create_refresh_token()
     await token_repo.add(
         RefreshToken(
             token_hash=a_security.hash_token(refresh),
             user_id=user_id,
-            expires_at=expire,
-            created_at=datetime.now(UTC),
+            expires_at=refresh_expire,
+            created_at=now,
         )
     )
     return TokenPair(access_token=access, refresh_token=refresh)
@@ -102,13 +109,17 @@ async def login_user(
 
 async def refresh_tokens(
     token_repo: TokenRepository, refresh_token: str
-) -> LoginResult:
+) -> LoginResult | ReuseDetected:
     token = await token_repo.get_by_hash(hash_token(refresh_token))
 
-    if not token:
+    if token is None:
         raise TokenNotFound
 
-    if token.expires_at < datetime.now(UTC) or token.revoked_at is not None:
+    if token.revoked_at is not None:
+        await token_repo.revoke_all(token.user_id)
+        return ReuseDetected()
+
+    if token.expires_at < datetime.now(UTC):
         raise TokenExpired
 
     user_id = token.user_id
