@@ -26,15 +26,20 @@ def verify_payment_signature(
     signature: str,
     secret: str,
     max_age_seconds: int = settings.DEFAULT_MAX_AGE_SECONDS,
+    curr_timestamp: int | None = None,
 ) -> bool:
 
-    curr_timestamp = int(time.time())
+    if curr_timestamp is None:
+        curr_timestamp = int(time.time())
+
     if curr_timestamp - timestamp > max_age_seconds:
+        return False
+    if  timestamp - curr_timestamp > settings.MAX_FUTURE_SKEW_SECONDS:
         return False
 
     expected_signature = create_webhook_signature(
         body=body,
-        timestamp=curr_timestamp,
+        timestamp=timestamp,
         secret=secret,
     )
 

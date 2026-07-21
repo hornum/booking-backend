@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     # Payment provider
     PAYMENT_WEBHOOK_SECRET: str
     DEFAULT_MAX_AGE_SECONDS: int = 60 * 15
+    MAX_FUTURE_SKEW_SECONDS: int = 60
     # JWT settings
     JWT_SECRET_KEY: str
     PASS_ALGORITHMS: str = "bcrypt"

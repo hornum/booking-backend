@@ -1,4 +1,3 @@
-import time
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
@@ -198,7 +197,7 @@ class SignatureData:
 @pytest.fixture
 def webhook_signature_data():
     secret = "secret"
-    timestamp = int(time.time())
+    timestamp = 1000
     body = b"body"
 
     signature = create_webhook_signature(

@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from booking.api.dependencies import get_session
@@ -44,7 +45,10 @@ async def webhook(
     if not signature_is_valid:
         raise HTTPException(status_code=401, detail="Invalid payment signature")
 
-    payload = WebhookPayload.model_validate_json(raw_body)
+    try:
+        payload = WebhookPayload.model_validate_json(raw_body)
+    except ValidationError:
+        raise HTTPException(status_code=422, detail="Invalid request body") from None
 
     try:
         await handle_payment_webhook(
