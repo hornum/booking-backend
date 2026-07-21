@@ -34,7 +34,7 @@ def verify_payment_signature(
 
     if curr_timestamp - timestamp > max_age_seconds:
         return False
-    if  timestamp - curr_timestamp > settings.MAX_FUTURE_SKEW_SECONDS:
+    if timestamp - curr_timestamp > settings.MAX_FUTURE_SKEW_SECONDS:
         return False
 
     expected_signature = create_webhook_signature(

@@ -65,7 +65,7 @@ async def test_unknown_session_webhook_fail(client, webhook_secret):
 
 
 async def test_webhook_failed_payment(
-        auth_client, webhook_secret, pending_payment, session
+    auth_client, webhook_secret, pending_payment, session
 ):
     webhook = make_signed_webhook(
         session_id=pending_payment.session_id,

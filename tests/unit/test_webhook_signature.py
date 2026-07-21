@@ -29,11 +29,7 @@ def test_signature_changed_body_failure(webhook_signature_data):
 
 def test_signature_future_timestamp_fail(webhook_signature_data):
     current_timestamp = webhook_signature_data.timestamp
-    future_timestamp = (
-            current_timestamp
-            + settings.MAX_FUTURE_SKEW_SECONDS
-            + 1
-    )
+    future_timestamp = current_timestamp + settings.MAX_FUTURE_SKEW_SECONDS + 1
 
     future_signature = create_webhook_signature(
         body=webhook_signature_data.body,
@@ -58,9 +54,7 @@ def test_signature_expired_timestamp_fail(webhook_signature_data):
         secret=webhook_signature_data.secret,
         timestamp=webhook_signature_data.timestamp,
         curr_timestamp=(
-                webhook_signature_data.timestamp
-                + settings.DEFAULT_MAX_AGE_SECONDS
-                + 1
+            webhook_signature_data.timestamp + settings.DEFAULT_MAX_AGE_SECONDS + 1
         ),
         signature=webhook_signature_data.signature,
     )
