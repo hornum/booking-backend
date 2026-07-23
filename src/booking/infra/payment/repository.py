@@ -13,6 +13,7 @@ class SqlPaymentRepository:
     def _to_domain(row: PaymentORM) -> Payment:
         return Payment(
             id=row.id,
+            created_at=row.created_at,
             booking_id=row.booking_id,
             amount=row.amount,
             provider_session_id=row.provider_session_id,

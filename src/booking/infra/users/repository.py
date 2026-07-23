@@ -1,7 +1,7 @@
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from booking.domain.users.models import User
+from booking.domain.users.models import User, UserRole
 from booking.infra.users.orm import UserORM
 
 
@@ -13,6 +13,8 @@ class SqlUserRepository:
     def _to_domain(row: UserORM) -> User:
         return User(
             id=row.id,
+            role=UserRole(row.role),
+            created_at=row.created_at,
             email=row.email,
             username=row.username,
             hashed_password=row.hashed_password,
@@ -22,6 +24,7 @@ class SqlUserRepository:
     def _to_orm(user: User) -> UserORM:
         orm = UserORM(
             id=user.id,
+            role=user.role,
             email=user.email,
             username=user.username,
             hashed_password=user.hashed_password,

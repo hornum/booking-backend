@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import StrEnum
 
 from booking.domain.bookings.errors import (
@@ -34,12 +34,14 @@ class Booking:
         start: datetime,
         end: datetime,
         status: BookingStatus,
+        created_at: datetime | None = None,
         id: int | None = None,
     ):
         if start >= end:
             raise InvalidBookingTime()
         self.room_id = room_id
         self.user_id = user_id
+        self.created_at = (created_at or datetime.now(UTC),)
         self.start = start
         self.end = end
         self._status = status

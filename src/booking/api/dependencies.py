@@ -7,7 +7,7 @@ from jwt import InvalidTokenError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from booking.domain.payment.provider import PaymentProvider
-from booking.domain.users.models import User
+from booking.domain.users.models import User, UserRole
 from booking.infra.a_security import decode_access_token
 from booking.infra.db import async_session_factory
 from booking.infra.payment.fake_provider import FakePaymentProvider
@@ -52,6 +52,18 @@ async def get_current_user(
 
 async def get_payment_provider() -> PaymentProvider:
     return FakePaymentProvider()
+
+
+async def verify_user_admin(
+    curr_user: Annotated[User, Depends(get_current_user)],
+) -> User:
+    if curr_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return curr_user
 
 
 async def get_current_user_id(

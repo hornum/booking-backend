@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from enum import StrEnum
 
 from booking.domain.payment.errors import (
@@ -32,12 +33,14 @@ class Payment:
         amount: int,
         provider_session_id: str,
         status: PaymentStatus,
+        created_at: datetime | None = None,
         id: int | None = None,
     ):
         if amount <= 0:
             raise InvalidPaymentAmount()
 
         self.booking_id = booking_id
+        self.created_at = (created_at or datetime.now(UTC),)
         self.amount = amount
         self.provider_session_id = provider_session_id
         self._status = status

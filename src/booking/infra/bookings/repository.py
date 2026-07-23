@@ -15,6 +15,7 @@ class SqlBookingRepository:
     def _to_domain(row: BookingORM) -> Booking:
         return Booking(
             id=row.id,
+            created_at=row.created_at,
             room_id=row.room_id,
             user_id=row.user_id,
             start=row.start,
