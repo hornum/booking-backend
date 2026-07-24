@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from booking.api.dependencies import (
-    get_current_user,
     get_current_user_id,
     get_payment_provider,
     get_session,
@@ -20,13 +19,11 @@ from booking.domain.bookings.errors import (
 )
 from booking.domain.bookings.models import Booking
 from booking.domain.payment.provider import PaymentProvider
-from booking.domain.users.models import User
 from booking.infra.bookings.repository import SqlBookingRepository
 from booking.infra.payment.repository import SqlPaymentRepository
 from booking.service.booking import (
     book_room,
     cancel_booking,
-    confirm_booking,
     get_booking,
 )
 from booking.service.payment import start_payment
@@ -126,29 +123,3 @@ async def pay_for_booking_endpoint(
         raise HTTPException(status_code=409, detail="Booking not payable") from None
 
     return PaymentUrlResponse(url=payment.payment_url)
-
-
-@router.post(
-    path="/{booking_id}/confirm", response_model=BookingResponse, status_code=200
-)
-async def confirm_booking_endpoint(
-    booking_id: int,
-    curr_user: Annotated[User, Depends(get_current_user)],
-    session: Annotated[AsyncSession, Depends(get_session)],
-) -> Booking:
-    repo = SqlBookingRepository(session)
-    if curr_user.id is None:
-        raise RuntimeError("Authenticated user has no id")
-    try:
-        booking = await confirm_booking(
-            repo=repo, booking_id=booking_id, actor_id=curr_user.id
-        )
-    except BookingNotFound:
-        raise HTTPException(status_code=404, detail="Booking not found") from None
-    except BookingAccessDenied:
-        raise HTTPException(status_code=403, detail="Booking access denied") from None
-    except InvalidBookingStatusTransition:
-        raise HTTPException(
-            status_code=409, detail="Invalid status transition"
-        ) from None
-    return booking

@@ -16,6 +16,11 @@ class BookRoomRequest(BaseModel):
         return self
 
 
+class AdminCreateBookingRequest(BookRoomRequest):
+    target_user_id: int
+    create_confirmed: bool = True
+
+
 class BookingResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from booking.domain.bookings.models import Booking
 from booking.infra.bookings.orm import BookingORM
+from booking.infra.filters import BookingFilter
 
 
 class SqlBookingRepository:
@@ -48,6 +49,22 @@ class SqlBookingRepository:
             return None
 
         return self._to_domain(orm_booking)
+
+    async def get_all(
+        self,
+        filters: BookingFilter,
+        offset: int = 0,
+        limit: int = 20,
+    ) -> list[Booking]:
+        query = select(BookingORM).offset(offset).limit(limit)
+        if filters.user_id is not None:
+            query = query.where(BookingORM.user_id == filters.user_id)
+
+        result = await self._session.execute(query)
+        rows = result.scalars().all()
+
+        bookings = [self._to_domain(r) for r in rows]
+        return bookings
 
     async def find_overlapping(
         self, room_id: int, start: datetime, end: datetime
