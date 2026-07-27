@@ -14,6 +14,7 @@ class SqlUserRepository:
         return User(
             id=row.id,
             role=UserRole(row.role),
+            is_active=row.is_active,
             created_at=row.created_at,
             email=row.email,
             username=row.username,
@@ -25,6 +26,7 @@ class SqlUserRepository:
         orm = UserORM(
             id=user.id,
             role=user.role,
+            is_active=user.is_active,
             email=user.email,
             username=user.username,
             hashed_password=user.hashed_password,
@@ -59,3 +61,21 @@ class SqlUserRepository:
         orm_user = result.scalar_one_or_none()
 
         return self._to_domain(orm_user) if orm_user is not None else None
+
+    async def update(self, user: User) -> User:
+        orm = self._to_orm(user)
+        merged = await self._session.merge(orm)
+        await self._session.flush()
+        return self._to_domain(merged)
+
+    async def get_all(
+        self,
+        offset: int = 0,
+        limit: int = 20,
+    ) -> list[User]:
+        query = select(UserORM).offset(offset).limit(limit)
+        result = await self._session.execute(query)
+        rows = result.scalars().all()
+
+        users = [self._to_domain(r) for r in rows]
+        return users

@@ -17,6 +17,7 @@ class User:
     hashed_password: str
     role: UserRole | None = None
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    is_active: bool = field(default=True)
     id: int | None = None
 
     def __post_init__(self) -> None:

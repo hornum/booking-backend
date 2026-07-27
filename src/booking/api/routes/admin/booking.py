@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from booking.api.dependencies import get_session, verify_user_admin
 from booking.api.schemas.booking import AdminCreateBookingRequest, BookingResponse
-from booking.api.schemas.common import BookingQueryParams
+from booking.api.schemas.common import AdminBookingQueryParams
 from booking.domain.bookings.errors import (
     BookingNotFound,
     InvalidBookingStatusTransition,
@@ -105,7 +105,7 @@ async def create_booking(
 async def get_bookings(
     curr_user: Annotated[User, Depends(verify_user_admin)],
     session: Annotated[AsyncSession, Depends(get_session)],
-    query: Annotated[BookingQueryParams, Query()],
+    query: Annotated[AdminBookingQueryParams, Query()],
 ) -> list[Booking]:
     bookings_repo = SqlBookingRepository(session)
     user_repo = SqlUserRepository(session)

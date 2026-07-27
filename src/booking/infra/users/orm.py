@@ -13,6 +13,7 @@ class UserORM(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     role: Mapped[UserRole] = mapped_column(String(16), server_default=UserRole.USER)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
-    username: Mapped[str]
-    email: Mapped[str] = mapped_column(String(255))
-    hashed_password: Mapped[str]
+    username: Mapped[str] = mapped_column(unique=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True)
+    is_active: Mapped[bool] = mapped_column(server_default="true")
+    hashed_password: Mapped[str] = mapped_column(String())

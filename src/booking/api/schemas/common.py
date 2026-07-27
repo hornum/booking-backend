@@ -7,4 +7,5 @@ class PaginationParams(BaseModel):
 
 
 class BookingQueryParams(PaginationParams):
+class AdminBookingQueryParams(PaginationParams):
     target_user_id: int | None = None

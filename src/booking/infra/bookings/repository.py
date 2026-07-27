@@ -1,9 +1,9 @@
 from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from booking.domain.bookings.models import Booking
+from booking.domain.bookings.models import Booking, BookingStatus
 from booking.infra.bookings.orm import BookingORM
 from booking.infra.filters import BookingFilter
 
@@ -60,6 +60,9 @@ class SqlBookingRepository:
         if filters.user_id is not None:
             query = query.where(BookingORM.user_id == filters.user_id)
 
+        if filters.room_id is not None:
+            query = query.where(BookingORM.room_id == filters.room_id)
+
         result = await self._session.execute(query)
         rows = result.scalars().all()
 
@@ -79,6 +82,15 @@ class SqlBookingRepository:
 
         bookings = [self._to_domain(r) for r in rows]
         return bookings
+
+    async def cancel_all_by_user_id(self, user_id: int) -> None:
+        query = (
+            update(BookingORM)
+            .where(BookingORM.user_id == user_id)
+            .values(status=BookingStatus.CANCELLED)
+        )
+        await self._session.execute(query)
+        await self._session.flush()
 
     async def update(self, booking: Booking) -> Booking:
         orm = self._to_orm(booking)

@@ -35,6 +35,11 @@ async def get_current_user(
         detail="Invalid token",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    banned_exc = HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Authorization is forbidden",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 
     try:
         user_id = decode_access_token(token)
@@ -46,6 +51,9 @@ async def get_current_user(
 
     if user is None:
         raise cred_exc
+
+    if not user.is_active:
+        raise banned_exc
 
     return user
 
