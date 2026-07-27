@@ -242,7 +242,7 @@ async def pending_payment(
     api_booking_data,
 ):
     booking_response = await auth_client.post(
-        "/v1/bookings/1/book",
+        "/v1/bookings/book",
         json=api_booking_data,
     )
     assert booking_response.status_code == 201

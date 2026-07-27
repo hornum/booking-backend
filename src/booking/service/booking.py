@@ -70,6 +70,20 @@ async def get_booking(
     return booking
 
 
+async def user_get_bookings(
+    repo: BookingRepository,
+    actor_id: int,
+    room_id: int | None,
+    offset: int,
+    limit: int,
+) -> list[Booking]:
+    return await repo.get_all(
+        filters=BookingFilter(user_id=actor_id, room_id=room_id),
+        offset=offset,
+        limit=limit,
+    )
+
+
 async def admin_confirm_booking(repo: BookingRepository, booking_id: int) -> Booking:
     booking = await repo.get(booking_id=booking_id)
     if booking is None:

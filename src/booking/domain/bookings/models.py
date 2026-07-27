@@ -41,7 +41,7 @@ class Booking:
             raise InvalidBookingTime()
         self.room_id = room_id
         self.user_id = user_id
-        self.created_at = (created_at or datetime.now(UTC),)
+        self.created_at = created_at or datetime.now(UTC)
         self.start = start
         self.end = end
         self._status = status

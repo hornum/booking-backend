@@ -6,6 +6,7 @@ from booking.domain.bookings.models import BookingStatus
 
 
 class BookRoomRequest(BaseModel):
+    room_id: int
     start: datetime
     end: datetime
 

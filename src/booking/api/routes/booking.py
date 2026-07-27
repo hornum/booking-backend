@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from booking.api.dependencies import (
@@ -9,6 +9,7 @@ from booking.api.dependencies import (
     get_session,
 )
 from booking.api.schemas.booking import BookingResponse, BookRoomRequest
+from booking.api.schemas.common import UserBookingQueryParams
 from booking.api.schemas.payment import PaymentUrlResponse
 from booking.domain.bookings.errors import (
     BookingAccessDenied,
@@ -25,16 +26,16 @@ from booking.service.booking import (
     book_room,
     cancel_booking,
     get_booking,
+    user_get_bookings,
 )
 from booking.service.payment import start_payment
 
 router = APIRouter(prefix="/v1/bookings", tags=["booking"])
 
 
-@router.post(path="/{room_id}/book", response_model=BookingResponse, status_code=201)
+@router.post(path="/book", response_model=BookingResponse, status_code=201)
 async def room_book_router(
     curr_user_id: Annotated[int, Depends(get_current_user_id)],
-    room_id: int,
     payload: BookRoomRequest,
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> Booking:
@@ -43,7 +44,7 @@ async def room_book_router(
         booking = await book_room(
             repo=repo,
             user_id=curr_user_id,
-            room_id=room_id,
+            room_id=payload.room_id,
             start=payload.start,
             end=payload.end,
         )
@@ -70,6 +71,23 @@ async def booking_get_router(
     except BookingAccessDenied:
         raise HTTPException(status_code=403, detail="Booking access denied") from None
     return booking
+
+
+@router.get(path="/", response_model=list[BookingResponse])
+async def bookings_get_router(
+    query: Annotated[UserBookingQueryParams, Query()],
+    curr_user_id: Annotated[int, Depends(get_current_user_id)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> list[Booking]:
+    repo = SqlBookingRepository(session)
+    bookings = await user_get_bookings(
+        repo=repo,
+        actor_id=curr_user_id,
+        room_id=query.room_id,
+        offset=query.offset,
+        limit=query.limit,
+    )
+    return bookings
 
 
 @router.post(
