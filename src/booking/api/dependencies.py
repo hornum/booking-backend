@@ -69,7 +69,6 @@ async def verify_user_admin(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied",
-            headers={"WWW-Authenticate": "Bearer"},
         )
     return curr_user
 

@@ -73,7 +73,19 @@ async def test_login(auth_json_data, user_repo, token_repo):
     assert response.user_id
 
 
-async def test_login_fail(auth_json_data, user_repo, token_repo):
+async def test_login_usernotfound_fail(auth_json_data, user_repo, token_repo):
+    await register_user(user_repo=user_repo, token_repo=token_repo, **auth_json_data)
+
+    with pytest.raises(UserNotFound):
+        await login_user(
+            user_repo=user_repo,
+            token_repo=token_repo,
+            username="wrong_name",
+            password=auth_json_data["password"],
+        )
+
+
+async def test_login_incorrect_pwd_fail(auth_json_data, user_repo, token_repo):
     await register_user(user_repo=user_repo, token_repo=token_repo, **auth_json_data)
 
     with pytest.raises(IncorrectPassword):
@@ -82,14 +94,6 @@ async def test_login_fail(auth_json_data, user_repo, token_repo):
             token_repo=token_repo,
             username=auth_json_data["username"],
             password="wrong_password",
-        )
-
-    with pytest.raises(UserNotFound):
-        await login_user(
-            user_repo=user_repo,
-            token_repo=token_repo,
-            username="wrong_name",
-            password=auth_json_data["password"],
         )
 
 

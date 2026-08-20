@@ -19,7 +19,7 @@ from booking.service.user import (
     admin_get_users,
 )
 
-router = APIRouter(prefix="/admin/users", tags=["Admin users"])
+router = APIRouter(prefix="/v1/admin/users", tags=["Admin users"])
 
 
 @router.get("/{user_id}/", status_code=200, response_model=AdminUserResponse)
@@ -37,7 +37,9 @@ async def get_user_by_id(
     return user
 
 
-@router.post("/{user_id}/status", status_code=200, response_model=AdminUserResponse)
+@router.post(
+    "/{target_user_id}/status", status_code=200, response_model=AdminUserResponse
+)
 async def change_user_is_active(
     target_user_id: int,
     curr_user: Annotated[User, Depends(verify_user_admin)],

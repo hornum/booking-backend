@@ -1,36 +1,27 @@
 from datetime import UTC, datetime
 
-import pytest
-
 from booking.domain.refresh_token.models import RefreshToken
-from booking.domain.users.errors import UserNotFound
 from booking.domain.users.models import User
 from booking.infra.a_security import hash_token
 from booking.infra.token.repository import SqlTokenRepository
 from booking.infra.users.repository import SqlUserRepository
-from booking.service.auth import login_user
 
 
 async def test_reg_login_success(client, auth_json_data):
     response = await client.post("/v1/auth/register", json=auth_json_data)
-    assert response.status_code == 200
+    assert response.status_code == 201
     response = await client.post("/v1/auth/login", data=auth_json_data)
     assert response.status_code == 200
     assert "access_token" in response.json()
     assert "refresh_token" in response.json()
 
 
-async def test_login_missing_username_fail(session):
-    user_repo = SqlUserRepository(session)
-    token_repo = SqlTokenRepository(session)
+async def test_find_by_username_returns_none_for_missing_user(session) -> None:
+    repo = SqlUserRepository(session)
 
-    with pytest.raises(UserNotFound):
-        await login_user(
-            user_repo=user_repo,
-            token_repo=token_repo,
-            username="wrong_username",
-            password="long_password",
-        )
+    result = await repo.find_by_username("wrong_username")
+
+    assert result is None
 
 
 async def test_get_current_user(client, auth_json_data):

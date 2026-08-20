@@ -23,7 +23,7 @@ from booking.service.booking import (
     admin_get_bookings,
 )
 
-router = APIRouter(prefix="/admin/bookings", tags=["Admin bookings"])
+router = APIRouter(prefix="/v1/admin/bookings", tags=["Admin bookings"])
 
 
 @router.post(
@@ -94,7 +94,7 @@ async def create_booking(
             create_confirmed=payload.create_confirmed,
         )
     except UserNotFound:
-        raise HTTPException(status_code=404, detail="Booking not found") from None
+        raise HTTPException(status_code=404, detail="User not found") from None
     except SlotTaken:
         raise HTTPException(status_code=409, detail="Slot already taken") from None
 
