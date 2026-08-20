@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import AsyncGenerator
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
@@ -17,21 +18,21 @@ from booking.api.dependencies import get_current_user, get_session
 from booking.domain.bookings.models import Booking, BookingStatus
 from booking.domain.payment.models import PaymentStatus
 from booking.domain.refresh_token.models import RefreshToken
-from booking.domain.users.models import User
+from booking.domain.users.models import User, UserRole
 from booking.infra import a_security
-from booking.infra.a_security import hash_token
+from booking.infra.a_security import hash_password, hash_token
 from booking.infra.bookings.repository import SqlBookingRepository
 from booking.infra.payment.webhook_signature import create_webhook_signature
 from booking.infra.token.repository import SqlTokenRepository
 from booking.infra.users.repository import SqlUserRepository
 from booking.main import app
-from tests.fakes import FakeTokenRepository, FakeUserRepository
+from tests.fakes import FakeBookingRepository, FakeTokenRepository, FakeUserRepository
 
 fast_pwd_context = CryptContext(schemes=["bcrypt"], bcrypt__rounds=4)
 
 
 @pytest.fixture(autouse=True)
-def fast_password_hashing(monkeypatch):
+def fast_password_hashing(monkeypatch) -> None:
     monkeypatch.setattr(a_security, "pwd_context", fast_pwd_context)
 
 
@@ -48,7 +49,7 @@ def postgres_container():
 
 
 @pytest_asyncio.fixture(scope="session")
-async def template_engine(postgres_container):
+async def template_engine(postgres_container) -> AsyncGenerator:
     url = postgres_container.get_connection_url()
     engine = create_async_engine(url, poolclass=NullPool)
     async with engine.connect() as conn:
@@ -58,7 +59,7 @@ async def template_engine(postgres_container):
 
 
 @pytest_asyncio.fixture
-async def test_db_url(template_engine):
+async def test_db_url(template_engine) -> AsyncGenerator:
     admin_engine = create_async_engine(
         template_engine.url.set(database="postgres"),
         isolation_level="AUTOCOMMIT",
@@ -79,7 +80,7 @@ async def test_db_url(template_engine):
 
 
 @pytest_asyncio.fixture
-async def session(test_db_url):
+async def session(test_db_url) -> AsyncGenerator:
     engine = create_async_engine(test_db_url, poolclass=NullPool)
     factory = async_sessionmaker(engine, expire_on_commit=False)
     async with factory() as db_session:
@@ -88,7 +89,7 @@ async def session(test_db_url):
 
 
 @pytest_asyncio.fixture
-async def client(session):
+async def client(session) -> AsyncGenerator:
     async def override_get_session():
         yield session
 
@@ -100,19 +101,20 @@ async def client(session):
 
 
 @pytest_asyncio.fixture
-async def auth_client(as_user):
+async def auth_client(as_user) -> AsyncGenerator:
     return as_user(1)
 
 
 @pytest_asyncio.fixture
 async def as_user(client):
-    def _as_user(user_id: int):
+    def _as_user(user_id: int, role: UserRole | None = None) -> User:
         def override_get_current_user():
             return User(
                 id=user_id,
                 username=f"tester{user_id}",
                 email=f"t{user_id}@t.com",
                 hashed_password="x",
+                role=role,
             )
 
         app.dependency_overrides[get_current_user] = override_get_current_user
@@ -122,22 +124,27 @@ async def as_user(client):
 
 
 @pytest.fixture
-def user_repo():
+def user_repo() -> FakeUserRepository:
     return FakeUserRepository()
 
 
 @pytest.fixture
-def token_repo():
+def booking_repo() -> FakeBookingRepository:
+    return FakeBookingRepository()
+
+
+@pytest.fixture
+def token_repo() -> FakeTokenRepository:
     return FakeTokenRepository()
 
 
 @pytest.fixture
-def api_booking_data():
+def api_booking_data() -> dict[str, ...]:
     return {"room_id": 1, "start": "2026-06-01T10:00:00", "end": "2026-06-01T11:00:00"}
 
 
 @pytest.fixture
-def auth_json_data():
+def auth_json_data() -> dict[str, str]:
     return {
         "username": "testuser",
         "password": "testpassword",
@@ -146,7 +153,7 @@ def auth_json_data():
 
 
 @pytest_asyncio.fixture
-async def refresh_token_json_data(client, auth_json_data):
+async def refresh_token_json_data(client, auth_json_data) -> dict[str, str]:
     tokens = await client.post(
         "/v1/auth/register",
         json=auth_json_data,
@@ -157,8 +164,18 @@ async def refresh_token_json_data(client, auth_json_data):
     }
 
 
+@pytest_asyncio.fixture
+async def registered_user_id(client, auth_json_data) -> int:
+    user = await client.post(
+        "/v1/auth/register",
+        json=auth_json_data,
+    )
+    data = user.json()
+    return data["user_id"]
+
+
 @pytest.fixture
-def base_booking_model_data():
+def base_booking_model_data() -> dict[str, ...]:
     return {
         "room_id": 1,
         "user_id": 1,
@@ -169,7 +186,18 @@ def base_booking_model_data():
 
 
 @pytest.fixture
-def base_payment_data():
+async def base_user_model_data() -> dict[str, ...]:
+    return {
+        "username": "testuser",
+        "email": "testuser@example.com",
+        "hashed_password": await hash_password("123"),
+        "role": UserRole.USER,
+        "id": 1,
+    }
+
+
+@pytest.fixture
+def base_payment_data() -> dict[str, ...]:
     return {
         "booking_id": 1,
         "amount": 500,
@@ -179,7 +207,7 @@ def base_payment_data():
 
 
 @pytest_asyncio.fixture
-async def booking_in_db(session):
+async def booking_in_db(session) -> Booking:
     repo = SqlBookingRepository(session)
     return await repo.add(
         Booking(
@@ -192,8 +220,22 @@ async def booking_in_db(session):
     )
 
 
+@pytest_asyncio.fixture
+async def expired_booking_in_db(session) -> Booking:
+    repo = SqlBookingRepository(session)
+    return await repo.add(
+        Booking(
+            room_id=1,
+            user_id=1,
+            start=datetime(2026, 1, 1, 10, 0, tzinfo=UTC),
+            end=datetime(2026, 1, 1, 11, 0, tzinfo=UTC),
+            status=BookingStatus.EXPIRED,
+        )
+    )
+
+
 @pytest.fixture
-def webhook_secret(monkeypatch: pytest.MonkeyPatch):
+def webhook_secret(monkeypatch: pytest.MonkeyPatch) -> str:
     secret = "very_fake_very_secret"
     monkeypatch.setattr(
         "booking.api.routes.payment.settings.PAYMENT_WEBHOOK_SECRET",
@@ -211,7 +253,7 @@ class SignatureData:
 
 
 @pytest.fixture
-def webhook_signature_data():
+def webhook_signature_data() -> SignatureData:
     secret = "secret"
     timestamp = 1000
     body = b"body"
@@ -240,7 +282,7 @@ class PaymentContext:
 async def pending_payment(
     auth_client,
     api_booking_data,
-):
+) -> PaymentContext:
     booking_response = await auth_client.post(
         "/v1/bookings/book",
         json=api_booking_data,
@@ -273,7 +315,7 @@ class RefreshTokenFamily:
 @pytest_asyncio.fixture
 async def active_refresh_token_family(
     session,
-):
+) -> RefreshTokenFamily:
     token_repo = SqlTokenRepository(session)
     user_repo = SqlUserRepository(session)
     user = await user_repo.add(

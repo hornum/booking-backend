@@ -1,10 +1,11 @@
 import copy
 from datetime import UTC, datetime
 
-from booking.domain.bookings.models import Booking
+from booking.domain.bookings.models import Booking, BookingStatus
 from booking.domain.payment.models import Payment
 from booking.domain.refresh_token.models import RefreshToken
 from booking.domain.users.models import User
+from booking.infra.filters import BookingFilter
 
 
 class FakeBookingRepository:
@@ -34,6 +35,19 @@ class FakeBookingRepository:
                 bookings.append(copy.deepcopy(b))
 
         return bookings
+
+    async def get_all(
+        self,
+        filters: BookingFilter,
+        offset: int = 0,
+        limit: int = 20,
+    ) -> list[Booking]: ...
+
+    async def cancel_all_by_user_id(self, user_id: int) -> None:
+        for i, b in enumerate(self._bookings):
+            if b.user_id == user_id:
+                b._status = BookingStatus.CANCELLED
+                self._bookings[i] = copy.deepcopy(b)
 
     async def update(self, booking: Booking) -> Booking | None:
         for i, b in enumerate(self._bookings):
@@ -73,6 +87,15 @@ class FakeUserRepository:
                 return user
 
         return None
+
+    async def update(self, user: User) -> User | None:
+        for i, u in enumerate(self._users):
+            if u.id == user.id:
+                self._users[i] = copy.deepcopy(user)
+                return copy.deepcopy(user)
+        return None
+
+    async def get_all(self, offset: int = 0, limit: int = 20) -> list[User]: ...
 
 
 class FakeTokenRepository:
