@@ -14,7 +14,12 @@ from booking.api.schemas.auth import (
     UserRegister,
 )
 from booking.domain.refresh_token.errors import TokenExpired, TokenNotFound
-from booking.domain.users.errors import UserAlreadyExists
+from booking.domain.users.errors import (
+    IncorrectPassword,
+    UserAlreadyExists,
+    UserBanned,
+    UserNotFound,
+)
 from booking.infra.token.repository import SqlTokenRepository
 from booking.infra.users.repository import SqlUserRepository
 from booking.service.auth import (
@@ -27,7 +32,7 @@ from booking.service.auth import (
 router = APIRouter(prefix="/v1/auth", tags=["Auth"])
 
 
-@router.post("/register")
+@router.post("/register", status_code=201, response_model=AuthResponse)
 async def register(
     data: UserRegister, session: Annotated[AsyncSession, Depends(get_session)]
 ) -> AuthResponse:
@@ -58,12 +63,16 @@ async def login(
 ) -> LoginResponse:
     user_repo = SqlUserRepository(session)
     token_repo = SqlTokenRepository(session)
-    user = await login_user(
-        user_repo=user_repo,
-        token_repo=token_repo,
-        username=data.username,
-        password=data.password,
-    )
+
+    try:
+        user = await login_user(
+            user_repo=user_repo,
+            token_repo=token_repo,
+            username=data.username,
+            password=data.password,
+        )
+    except (UserNotFound, UserBanned, IncorrectPassword):
+        raise HTTPException(status_code=401, detail="Authentication fail") from None
 
     return LoginResponse(
         user_id=user.user_id,

@@ -8,6 +8,7 @@ from booking.domain.refresh_token.repo import TokenRepository
 from booking.domain.users.errors import (
     IncorrectPassword,
     UserAlreadyExists,
+    UserBanned,
     UserNotFound,
 )
 from booking.domain.users.models import User
@@ -93,6 +94,8 @@ async def login_user(
     user = await user_repo.find_by_username(username)
     if not user:
         raise UserNotFound()
+    if not user.is_active:
+        raise UserBanned()
     if not await a_security.verify_password(password, user.hashed_password):
         raise IncorrectPassword()
     if user.id is None:

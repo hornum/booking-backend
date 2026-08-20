@@ -14,5 +14,9 @@ class UserNotFound(UserError):
     pass
 
 
+class UserBanned(UserError):
+    pass
+
+
 class IncorrectPassword(UserError):
     pass
