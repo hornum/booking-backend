@@ -1,6 +1,7 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, String, func
+from sqlalchemy import DateTime, String, func, text
+from sqlalchemy.dialects.postgresql import ExcludeConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from booking.domain.bookings.models import BookingStatus
@@ -19,3 +20,12 @@ class BookingORM(Base):
     start: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     end: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     status: Mapped[BookingStatus] = mapped_column(String(16))
+
+    __table_args__ = (
+        ExcludeConstraint(
+            ("room_id", "="),
+            (text("tstzrange(start, end, '[)')"), "&&"),
+            name="booking_no_overlap",
+            where=text("status IN ('hold', 'confirmed')"),
+        ),
+    )

@@ -1,7 +1,7 @@
 import uuid
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta, timezone
 
 import pytest
 import pytest_asyncio
@@ -16,9 +16,12 @@ from testcontainers.postgres import PostgresContainer
 
 from booking.api.dependencies import get_current_user, get_session
 from booking.domain.bookings.models import Booking, BookingStatus
+from booking.domain.bookings.repo import BookingRepository
 from booking.domain.payment.models import PaymentStatus
 from booking.domain.refresh_token.models import RefreshToken
+from booking.domain.refresh_token.repo import TokenRepository
 from booking.domain.users.models import User, UserRole
+from booking.domain.users.repo import UserRepository
 from booking.infra import a_security
 from booking.infra.a_security import hash_password, hash_token
 from booking.infra.bookings.repository import SqlBookingRepository
@@ -124,17 +127,27 @@ async def as_user(client):
 
 
 @pytest.fixture
-def user_repo() -> FakeUserRepository:
+def fake_user_repo() -> FakeUserRepository:
     return FakeUserRepository()
 
+@pytest.fixture
+def user_repo(session) -> UserRepository:
+    return SqlUserRepository(session)
 
 @pytest.fixture
-def booking_repo() -> FakeBookingRepository:
+def booking_repo(session) -> BookingRepository:
+    return SqlBookingRepository(session)
+
+@pytest.fixture
+def fake_booking_repo() -> FakeBookingRepository:
     return FakeBookingRepository()
 
+@pytest.fixture
+def token_repo(session) -> TokenRepository:
+    return SqlTokenRepository(session)
 
 @pytest.fixture
-def token_repo() -> FakeTokenRepository:
+def fake_token_repo() -> FakeTokenRepository:
     return FakeTokenRepository()
 
 
@@ -176,11 +189,12 @@ async def registered_user_id(client, auth_json_data) -> int:
 
 @pytest.fixture
 def base_booking_model_data() -> dict[str, ...]:
+    now = datetime.now(timezone.utc)
     return {
         "room_id": 1,
         "user_id": 1,
-        "start": datetime(2026, 1, 1, 10, 00, tzinfo=UTC),
-        "end": datetime(2026, 1, 1, 12, 30, tzinfo=UTC),
+        "start": now + timedelta(hours=1),
+        "end": now + timedelta(hours=2),
         "status": BookingStatus.HOLD,
     }
 

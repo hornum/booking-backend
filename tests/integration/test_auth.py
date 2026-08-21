@@ -5,6 +5,21 @@ from booking.domain.users.models import User
 from booking.infra.a_security import hash_token
 from booking.infra.token.repository import SqlTokenRepository
 from booking.infra.users.repository import SqlUserRepository
+from booking.service.auth import register_user
+
+
+async def test_reg_success(user_repo, token_repo):
+    user = await register_user(
+        user_repo=user_repo,
+        token_repo=token_repo,
+        username="testdummy",
+        email="testdummy@testdummy.com",
+        password="long_password",
+    )
+
+    assert user.access_token
+    assert user.refresh_token
+    assert user.user_id
 
 
 async def test_reg_login_success(client, auth_json_data):

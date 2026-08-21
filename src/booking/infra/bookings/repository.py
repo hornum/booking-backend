@@ -1,8 +1,10 @@
 from datetime import datetime
 
 from sqlalchemy import select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from booking.domain.bookings.errors import SlotTaken
 from booking.domain.bookings.models import Booking, BookingStatus
 from booking.infra.bookings.orm import BookingORM
 from booking.infra.filters import BookingFilter
@@ -40,7 +42,14 @@ class SqlBookingRepository:
     async def add(self, booking: Booking) -> Booking:
         orm_booking = self._to_orm(booking)
         self._session.add(orm_booking)
-        await self._session.flush()
+
+        try:
+            await self._session.flush()
+        except IntegrityError as e:
+            if "booking_no_overlap" in str(e):
+                raise SlotTaken from None
+            raise
+
         return self._to_domain(orm_booking)
 
     async def get(self, booking_id: int) -> Booking | None:
